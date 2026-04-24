@@ -46,6 +46,17 @@ function downloadAsCardImage() {
   exportStore.downloadAsCardImage()
 }
 
+async function downloadAsPagedImagesZip() {
+  try {
+    const count = await exportStore.downloadAsPagedImagesZip()
+    toast.success(`已导出 ${count} 张分页图片。`)
+  }
+  catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    toast.error(`分页图片导出失败：${message}`)
+  }
+}
+
 function exportEditorContent2PDF() {
   exportStore.exportEditorContent2PDF()
 }
@@ -108,6 +119,10 @@ function exportEditorContent2PDF() {
           <MenubarItem @click="downloadAsCardImage()">
             <Download class="mr-2 size-4" />
             PNG 图片
+          </MenubarItem>
+          <MenubarItem @click="downloadAsPagedImagesZip()">
+            <Download class="mr-2 size-4" />
+            分页 PNG 图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>
@@ -192,6 +207,10 @@ function exportEditorContent2PDF() {
           <MenubarItem @click="downloadAsCardImage()">
             <Download class="mr-2 size-4" />
             PNG 图片
+          </MenubarItem>
+          <MenubarItem @click="downloadAsPagedImagesZip()">
+            <Download class="mr-2 size-4" />
+            分页 PNG 图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>
