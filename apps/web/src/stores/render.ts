@@ -34,6 +34,7 @@ export const useRenderStore = defineStore(`render`, () => {
    */
   const initRendererInstance = (options?: {
     isMacCodeBlock?: boolean
+    isShowHeadingNumber?: boolean
     isShowLineNumber?: boolean
   }) => {
     renderer = initRenderer(options || {})
@@ -80,6 +81,7 @@ export const useRenderStore = defineStore(`render`, () => {
       legend: themeStore.legend,
       countStatus: themeStore.isCountStatus,
       isMacCodeBlock: themeStore.isMacCodeBlock,
+      isShowHeadingNumber: themeStore.isShowHeadingNumber,
       isShowLineNumber: themeStore.isShowLineNumber,
       themeMode: uiStore.isDark ? 'dark' : 'light',
     })

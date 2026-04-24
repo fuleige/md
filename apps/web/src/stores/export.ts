@@ -28,6 +28,31 @@ const MAX_PAGE_HEIGHT = 1400
 const MIN_SLICE_HEIGHT = 120
 const MIN_CONTENT_HEIGHT = 80
 const IMAGE_EXPORT_PIXEL_RATIO = 2
+const MAX_PAGE_OVERSHOOT_RATIO = 1.3
+const RANGE_PADDING = 2
+const BLOCK_AVOID_SELECTOR = [
+  `h1`,
+  `h2`,
+  `h3`,
+  `h4`,
+  `h5`,
+  `h6`,
+  `p`,
+  `li`,
+  `blockquote`,
+  `pre`,
+  `figure`,
+  `img`,
+  `svg`,
+  `canvas`,
+  `hr`,
+  `details`,
+  `.table-wrapper`,
+  `.mermaid-diagram`,
+  `.infographic-diagram`,
+  `.plantuml-diagram`,
+  `.katex-display`,
+].join(`,`)
 
 function delay(ms: number) {
   return new Promise(resolve => window.setTimeout(resolve, ms))
@@ -86,24 +111,31 @@ async function waitForPreviewImages(root: HTMLElement) {
   }))
 }
 
-function collectAvoidRanges(root: HTMLElement): AvoidRange[] {
-  const rootRect = root.getBoundingClientRect()
-  const elements = Array.from(
-    root.querySelectorAll<HTMLElement>(`img, figure, .mermaid-diagram, .infographic-diagram, svg, canvas`),
-  )
+async function waitForDocumentFonts() {
+  try {
+    await document.fonts?.ready
+  }
+  catch {
+    // 字体加载失败不阻断导出，后续截图仍使用浏览器回退字体。
+  }
+}
 
-  const ranges = elements
-    .filter(element => !element.closest(`pre, code`))
-    .map((element) => {
-      const rect = element.getBoundingClientRect()
-      return {
-        start: Math.max(0, rect.top - rootRect.top),
-        end: Math.max(0, rect.bottom - rootRect.top),
-      }
-    })
-    .filter(range => range.end - range.start > 8)
-    .sort((a, b) => a.start - b.start)
+function waitForNextFrame() {
+  return new Promise<void>(resolve => window.requestAnimationFrame(() => resolve()))
+}
 
+async function waitForExportReady(root: HTMLElement) {
+  await waitForPreviewImages(root)
+  await waitForDocumentFonts()
+  await delay(EXPORT_READY_DELAY)
+  await waitForNextFrame()
+}
+
+function getMeasuredHeight(element: HTMLElement) {
+  return Math.ceil(Math.max(element.getBoundingClientRect().height, element.scrollHeight))
+}
+
+function mergeRanges(ranges: AvoidRange[]) {
   return ranges.reduce<AvoidRange[]>((merged, range) => {
     const previous = merged[merged.length - 1]
     if (previous && range.start <= previous.end) {
@@ -116,8 +148,78 @@ function collectAvoidRanges(root: HTMLElement): AvoidRange[] {
   }, [])
 }
 
+function collectAvoidRanges(root: HTMLElement, totalHeight: number): AvoidRange[] {
+  const rootRect = root.getBoundingClientRect()
+  const contentRoot = root.querySelector<HTMLElement>(`#output`) ?? root
+  const elements = Array.from(
+    contentRoot.querySelectorAll<HTMLElement>(BLOCK_AVOID_SELECTOR),
+  )
+
+  const ranges = elements
+    .filter((element) => {
+      if (element.closest(`pre, code`) && !element.matches(`pre`)) {
+        return false
+      }
+      const rect = element.getBoundingClientRect()
+      return rect.width > 0 && rect.height > 8
+    })
+    .map((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        start: Math.max(0, Math.floor(rect.top - rootRect.top) - RANGE_PADDING),
+        end: Math.min(totalHeight, Math.ceil(rect.bottom - rootRect.top) + RANGE_PADDING),
+      }
+    })
+    .filter(range => range.end - range.start > 8)
+    .sort((a, b) => a.start - b.start)
+
+  return mergeRanges(ranges)
+}
+
 function calculatePageHeight(width: number) {
   return Math.min(MAX_PAGE_HEIGHT, Math.max(MIN_PAGE_HEIGHT, Math.round(width * 16 / 9)))
+}
+
+function findRangeAtPosition(ranges: AvoidRange[], position: number) {
+  return ranges.find(range => range.start < position && range.end > position)
+}
+
+function resolveSliceEnd(start: number, totalHeight: number, pageHeight: number, avoidRanges: AvoidRange[]) {
+  let end = Math.min(start + pageHeight, totalHeight)
+
+  if (end >= totalHeight) {
+    return totalHeight
+  }
+
+  const maxComfortableEnd = Math.min(totalHeight, start + Math.round(pageHeight * MAX_PAGE_OVERSHOOT_RATIO))
+
+  for (let i = 0; i <= avoidRanges.length; i++) {
+    const blockingRange = findRangeAtPosition(avoidRanges, end)
+    if (!blockingRange) {
+      break
+    }
+
+    const safeHeightBeforeRange = blockingRange.start - start
+    const canKeepRangeInCurrentSlice = blockingRange.end <= maxComfortableEnd || safeHeightBeforeRange < MIN_SLICE_HEIGHT
+    end = canKeepRangeInCurrentSlice
+      ? Math.min(blockingRange.end, totalHeight)
+      : Math.max(blockingRange.start, start)
+
+    if (end >= totalHeight) {
+      return totalHeight
+    }
+  }
+
+  if (totalHeight - end < MIN_CONTENT_HEIGHT) {
+    return totalHeight
+  }
+
+  if (end <= start) {
+    const currentRange = avoidRanges.find(range => range.start <= start && range.end > start)
+    return currentRange ? Math.min(currentRange.end, totalHeight) : Math.min(start + pageHeight, totalHeight)
+  }
+
+  return end
 }
 
 function createSliceRanges(totalHeight: number, pageHeight: number, avoidRanges: AvoidRange[]): SliceRange[] {
@@ -125,26 +227,7 @@ function createSliceRanges(totalHeight: number, pageHeight: number, avoidRanges:
   let start = 0
 
   while (start < totalHeight - 1) {
-    let end = Math.min(start + pageHeight, totalHeight)
-    const blockingRange = avoidRanges.find(range => range.start < end && range.end > end)
-
-    if (blockingRange) {
-      const safeHeightBeforeRange = blockingRange.start - start
-      if (safeHeightBeforeRange >= MIN_SLICE_HEIGHT) {
-        end = blockingRange.start
-      }
-      else {
-        end = Math.min(blockingRange.end, totalHeight)
-      }
-    }
-
-    if (totalHeight - end < MIN_CONTENT_HEIGHT) {
-      end = totalHeight
-    }
-
-    if (end <= start) {
-      end = Math.min(start + pageHeight, totalHeight)
-    }
+    const end = resolveSliceEnd(start, totalHeight, pageHeight, avoidRanges)
 
     slices.push({ start, end })
     start = end
@@ -253,7 +336,7 @@ export const useExportStore = defineStore(`export`, () => {
     document.head.appendChild(style)
 
     try {
-      await delay(EXPORT_READY_DELAY)
+      await waitForExportReady(el)
       const url = await toPng(el, {
         backgroundColor: uiStore.isDark ? `` : `#fff`,
         filter: shouldExportNode,
@@ -289,13 +372,13 @@ export const useExportStore = defineStore(`export`, () => {
     document.head.appendChild(style)
 
     try {
-      await waitForPreviewImages(el)
-      await delay(EXPORT_READY_DELAY)
+      await waitForExportReady(el)
 
       const updatedRect = el.getBoundingClientRect()
+      const totalHeight = getMeasuredHeight(el)
       const pageHeight = calculatePageHeight(updatedRect.width)
-      const avoidRanges = collectAvoidRanges(el)
-      const slices = createSliceRanges(updatedRect.height, pageHeight, avoidRanges)
+      const avoidRanges = collectAvoidRanges(el, totalHeight)
+      const slices = createSliceRanges(totalHeight, pageHeight, avoidRanges)
 
       const canvas = await toCanvas(el, {
         backgroundColor: uiStore.isDark ? `` : `#fff`,
@@ -305,7 +388,7 @@ export const useExportStore = defineStore(`export`, () => {
         style: { margin: `0` },
       })
 
-      const scaleY = canvas.height / updatedRect.height
+      const scaleY = canvas.height / totalHeight
       const { default: JSZip } = await import(`jszip`)
       const zip = new JSZip()
       const safeTitle = sanitizeTitle(currentPost.title)

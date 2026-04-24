@@ -35,7 +35,10 @@ export const useThemeStore = defineStore(`theme`, () => {
   const legend = store.reactive(`legend`, defaultStyleConfig.legend)
 
   // 是否开启 Mac 代码块
-  const isMacCodeBlock = store.reactive(`isMacCodeBlock`, defaultStyleConfig.isMacCodeBlock)
+  const isMacCodeBlock = store.reactive(addPrefix(`mac_code_block`), defaultStyleConfig.isMacCodeBlock)
+
+  // 是否开启标题自动编号
+  const isShowHeadingNumber = store.reactive(addPrefix(`show_heading_number`), defaultStyleConfig.isShowHeadingNumber)
 
   // 是否开启代码块行号显示
   const isShowLineNumber = store.reactive(`isShowLineNumber`, defaultStyleConfig.isShowLineNumber)
@@ -63,6 +66,7 @@ export const useThemeStore = defineStore(`theme`, () => {
 
   // Toggle 方法
   const toggleMacCodeBlock = useToggle(isMacCodeBlock)
+  const toggleShowHeadingNumber = useToggle(isShowHeadingNumber)
   const toggleShowLineNumber = useToggle(isShowLineNumber)
   const toggleCiteStatus = useToggle(isCiteStatus)
   const toggleCountStatus = useToggle(isCountStatus)
@@ -73,6 +77,7 @@ export const useThemeStore = defineStore(`theme`, () => {
   const resetStyle = () => {
     isCiteStatus.value = defaultStyleConfig.isCiteStatus
     isMacCodeBlock.value = defaultStyleConfig.isMacCodeBlock
+    isShowHeadingNumber.value = defaultStyleConfig.isShowHeadingNumber
     isShowLineNumber.value = defaultStyleConfig.isShowLineNumber
     isCountStatus.value = defaultStyleConfig.isCountStatus
 
@@ -190,6 +195,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     isCodeBlockThemeCustom,
     legend,
     isMacCodeBlock,
+    isShowHeadingNumber,
     isShowLineNumber,
     isCiteStatus,
     isCountStatus,
@@ -200,6 +206,7 @@ export const useThemeStore = defineStore(`theme`, () => {
 
     // Actions
     toggleMacCodeBlock,
+    toggleShowHeadingNumber,
     toggleShowLineNumber,
     toggleCiteStatus,
     toggleCountStatus,

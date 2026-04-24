@@ -485,6 +485,7 @@ onMounted(() => {
 
   renderStore.initRendererInstance({
     isMacCodeBlock: themeStore.isMacCodeBlock,
+    isShowHeadingNumber: themeStore.isShowHeadingNumber,
     isShowLineNumber: themeStore.isShowLineNumber,
   })
 

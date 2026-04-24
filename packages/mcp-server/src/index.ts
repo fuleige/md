@@ -66,6 +66,11 @@ server.registerTool(
         .optional()
         .default(false)
         .describe(`Whether to show line numbers in code blocks.`),
+      isShowHeadingNumber: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(`Whether to show automatic heading numbers.`),
       citeStatus: z
         .boolean()
         .optional()
@@ -82,6 +87,7 @@ server.registerTool(
     const renderer = initRenderer({
       isMacCodeBlock: args.isMacCodeBlock,
       isShowLineNumber: args.isShowLineNumber,
+      isShowHeadingNumber: args.isShowHeadingNumber,
       citeStatus: args.citeStatus,
       countStatus: args.countStatus,
     })
@@ -271,6 +277,12 @@ server.registerTool(
         type: `boolean`,
         default: false,
         description: `Show line numbers inside code blocks.`,
+      },
+      {
+        name: `isShowHeadingNumber`,
+        type: `boolean`,
+        default: false,
+        description: `Show automatic heading numbers before rendered headings.`,
       },
       {
         name: `citeStatus`,

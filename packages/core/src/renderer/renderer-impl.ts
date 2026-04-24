@@ -231,15 +231,23 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens)
       const tag = `h${depth}`
-      headingCounters[depth] += 1
-      for (let i = depth + 1; i < headingCounters.length; i++) {
-        headingCounters[i] = 0
+
+      if (opts.isShowHeadingNumber) {
+        headingCounters[depth] += 1
+        for (let i = depth + 1; i < headingCounters.length; i++) {
+          headingCounters[i] = 0
+        }
+        const indexStart = depth === 1 ? 1 : 2
+        const index = headingCounters.slice(indexStart, depth + 1).filter(Boolean).join(`.`)
+        return styledContent(
+          tag,
+          `<span class="heading-index heading-index-${tag}">${index}</span><span class="heading-content">${text}</span>`,
+        )
       }
-      const indexStart = depth === 1 ? 1 : 2
-      const index = headingCounters.slice(indexStart, depth + 1).filter(Boolean).join(`.`)
+
       return styledContent(
         tag,
-        `<span class="heading-index heading-index-${tag}">${index}</span><span class="heading-content">${text}</span>`,
+        `<span class="heading-content heading-content-alone">${text}</span>`,
       )
     },
 
@@ -266,7 +274,9 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
 
       const highlighted = highlightAndFormatCode(text, language, hljs, !!opts.isShowLineNumber)
 
-      const span = `<span class="mac-sign" style="padding: 10px 14px 0;">${macCodeSvg}</span>`
+      const span = opts.isMacCodeBlock
+        ? `<span class="mac-sign" style="padding: 10px 14px 0;">${macCodeSvg}</span>`
+        : ``
       // 如果语言未注册，添加 data-language-pending 属性和原始代码文本用于后续动态加载
       let pendingAttr = ``
       if (!isLanguageRegistered && langText !== `plaintext`) {

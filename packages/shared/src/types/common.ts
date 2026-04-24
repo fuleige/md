@@ -10,6 +10,7 @@ export interface IOpts {
   citeStatus?: boolean
   countStatus?: boolean
   isMacCodeBlock?: boolean
+  isShowHeadingNumber?: boolean
   isShowLineNumber?: boolean
   themeMode?: 'light' | 'dark'
 }

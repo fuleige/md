@@ -138,18 +138,17 @@ export async function exportPureHTML(raw: string, title: string = `untitled`) {
 
 /**
  * 导出 PDF 文档（新主题系统）
- * @param {string} title - 文档标题
+ * @param {string} _title - 文档标题
  */
-export async function exportPDF(title: string = `untitled`) {
+export async function exportPDF(_title: string = `untitled`) {
   const htmlStr = getHtmlContent()
   const stylesToAdd = await getStylesToAdd()
-  const safeTitle = sanitizeTitle(title)
 
   const printHtml = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${safeTitle}</title>
+  <title></title>
   ${stylesToAdd}
   <style>
     /* 强制打印背景颜色和图片 */
@@ -159,22 +158,25 @@ export async function exportPDF(title: string = `untitled`) {
       color-adjust: exact !important;
     }
 
-    /* 打印页面设置 */
     @page {
+      margin: 14mm 0;
+      @top-left {
+        content: "";
+      }
       @top-center {
-        content: "${safeTitle}";
-        font-size: 12px;
-        color: #666;
+        content: "";
+      }
+      @top-right {
+        content: "";
       }
       @bottom-left {
-        content: "https://md.doocs.org";
-        font-size: 10px;
-        color: #999;
+        content: "";
+      }
+      @bottom-center {
+        content: "";
       }
       @bottom-right {
-        content: "第 " counter(page) " 页，共 " counter(pages) " 页";
-        font-size: 10px;
-        color: #999;
+        content: "";
       }
     }
 
@@ -297,6 +299,62 @@ function createEmptyNode(): HTMLElement {
   return node
 }
 
+function removeClipboardRootBackground(root: HTMLElement) {
+  const containers = Array.from(root.children).filter((element): element is HTMLElement => {
+    return element instanceof HTMLElement && element.classList.contains(`container`)
+  })
+
+  containers.forEach((container) => {
+    container.style.removeProperty(`background`)
+    container.style.removeProperty(`background-color`)
+    container.style.removeProperty(`background-image`)
+
+    if (container.getAttribute(`style`)?.trim() === ``) {
+      container.removeAttribute(`style`)
+    }
+  })
+}
+
+function normalizeClipboardCodeBlocks(root: HTMLElement) {
+  root.querySelectorAll<HTMLElement>(`pre.code__pre, .hljs.code__pre`).forEach((pre) => {
+    const firstElement = pre.firstElementChild
+    const languageHeader = firstElement instanceof HTMLElement
+      && firstElement.tagName.toLowerCase() === `span`
+      && !firstElement.classList.contains(`mac-sign`)
+      && firstElement.textContent?.trim()
+      ? firstElement
+      : null
+
+    pre.style.setProperty(`padding-top`, `0`, `important`)
+
+    if (!languageHeader) {
+      return
+    }
+
+    const header = document.createElement(`section`)
+    header.textContent = languageHeader.textContent
+    header.setAttribute(
+      `style`,
+      [
+        `display:block`,
+        `width:100%`,
+        `box-sizing:border-box`,
+        `margin:0`,
+        `padding:${languageHeader.style.padding || `0.55em 0.9em`}`,
+        `border-bottom:${languageHeader.style.borderBottom || `1px solid rgba(148, 163, 184, 0.35)`}`,
+        `color:${languageHeader.style.color || `#94a3b8`}`,
+        `background:${languageHeader.style.background || `transparent`}`,
+        `font-size:${languageHeader.style.fontSize || `0.78em`}`,
+        `line-height:${languageHeader.style.lineHeight || `1.4`}`,
+        `text-align:left`,
+        `text-transform:${languageHeader.style.textTransform || `none`}`,
+      ].join(`;`),
+    )
+
+    languageHeader.replaceWith(header)
+  })
+}
+
 /**
  * 获取需要添加的样式
  * @returns {Promise<string>} 样式字符串
@@ -336,6 +394,9 @@ export async function processClipboardContent(primaryColor: string) {
       /<span class="edgeLabel"([^>]*)><p[^>]*>(.*?)<\/p><\/span>/g,
       `<span class="edgeLabel"$1>$2</span>`,
     )
+
+  removeClipboardRootBackground(clipboardDiv)
+  normalizeClipboardCodeBlocks(clipboardDiv)
 
   // 处理图片大小
   solveWeChatImage()

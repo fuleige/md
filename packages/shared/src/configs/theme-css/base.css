@@ -26,11 +26,16 @@ container {
 }
 
 .heading-index {
-  display: none;
+  display: inline;
+  margin-right: 0.35em;
 }
 
 .heading-content {
   display: inline;
+}
+
+.heading-content-alone {
+  grid-column: 1 / -1;
 }
 
 .mermaid-diagram .nodeLabel p {

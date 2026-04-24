@@ -38,6 +38,7 @@ const {
   isCodeBlockThemeCustom,
   legend,
   isMacCodeBlock,
+  isShowHeadingNumber,
   isShowLineNumber,
   isCiteStatus,
   isUseIndent,
@@ -136,6 +137,11 @@ function legendChanged(newVal: string) {
 
 function macCodeBlockChanged() {
   themeStore.isMacCodeBlock = !themeStore.isMacCodeBlock
+  editorRefresh()
+}
+
+function showHeadingNumberChanged() {
+  themeStore.isShowHeadingNumber = !themeStore.isShowHeadingNumber
   editorRefresh()
 }
 
@@ -379,6 +385,25 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
             class="w-full" variant="outline" :class="{
               'border-black dark:border-white border-2': !isMacCodeBlock,
             }" @click="isMacCodeBlock && macCodeBlockChanged()"
+          >
+            关闭
+          </Button>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <h2>标题自动编号</h2>
+        <div class="grid grid-cols-5 justify-items-center gap-2">
+          <Button
+            class="w-full" variant="outline" :class="{
+              'border-black dark:border-white border-2': isShowHeadingNumber,
+            }" @click="!isShowHeadingNumber && showHeadingNumberChanged()"
+          >
+            开启
+          </Button>
+          <Button
+            class="w-full" variant="outline" :class="{
+              'border-black dark:border-white border-2': !isShowHeadingNumber,
+            }" @click="isShowHeadingNumber && showHeadingNumberChanged()"
           >
             关闭
           </Button>
