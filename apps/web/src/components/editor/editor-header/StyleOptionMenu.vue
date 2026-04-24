@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ThemeName } from '@md/shared/configs'
 import type { IConfigOption } from '@md/shared/types'
 import type { Component } from 'vue'
+import { themePrimaryColorMap } from '@md/shared/configs'
 
 const props = defineProps<{
   title: string
@@ -23,6 +25,16 @@ function setStyle(title: string, value: string) {
       return {}
   }
 }
+
+function getSwatchColor(title: string, value: string) {
+  if (title === `主题`) {
+    return themePrimaryColorMap[value as ThemeName]
+  }
+  if (title === `主题色` || title === `文字颜色`) {
+    return value
+  }
+  return ``
+}
 </script>
 
 <template>
@@ -42,6 +54,11 @@ function setStyle(title: string, value: string) {
         :checked="current === value"
         @click="change(value)"
       >
+        <span
+          v-if="getSwatchColor(title, value)"
+          class="mr-2 h-3.5 w-3.5 shrink-0 rounded-full border border-black/10 dark:border-white/20"
+          :style="{ background: getSwatchColor(title, value) }"
+        />
         {{ label }}
         <DropdownMenuShortcut :style="setStyle(title, value)">
           {{ desc }}

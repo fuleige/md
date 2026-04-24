@@ -44,6 +44,36 @@ export function generateHeadingStyles(config: CSSVariableConfig): string {
 }
 
 /**
+ * 代码块兼容样式：让语法高亮主题负责代码块前景/背景色，
+ * 避免文章主题里的行内 code 样式污染代码块。
+ */
+export function generateCodeBlockCompatibilityStyles(): string {
+  return `
+#output pre.code__pre > code,
+#output .hljs.code__pre > code {
+  display: -webkit-box;
+  padding: 0.5em 1em 1em;
+  overflow-x: auto;
+  text-indent: 0;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  white-space: nowrap;
+  margin: 0;
+}
+
+#output pre.code__pre .line-numbers,
+#output .hljs.code__pre .line-numbers {
+  color: var(--md-code-line-number-color, rgba(148, 163, 184, 0.95));
+  border-right-color: var(--md-code-line-number-border, rgba(148, 163, 184, 0.28)) !important;
+  background: var(--md-code-line-number-bg, transparent) !important;
+}
+  `.trim()
+}
+
+/**
  * 生成标题样式 CSS
  */
 function generateHeadingStylesCSS(headingStyles?: HeadingStyles): string {

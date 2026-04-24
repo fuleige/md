@@ -157,6 +157,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
   let footnoteIndex: number = 0
   const listOrderedStack: boolean[] = []
   const listCounters: number[] = []
+  const headingCounters: number[] = [0, 0, 0, 0, 0, 0, 0]
 
   function getOpts(): IOpts {
     return opts
@@ -192,6 +193,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
   function reset(newOpts: Partial<IOpts>): void {
     footnotes.length = 0
     footnoteIndex = 0
+    headingCounters.fill(0)
     setOptions(newOpts)
   }
 
@@ -229,7 +231,16 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     heading({ tokens, depth }: Tokens.Heading) {
       const text = this.parser.parseInline(tokens)
       const tag = `h${depth}`
-      return styledContent(tag, text)
+      headingCounters[depth] += 1
+      for (let i = depth + 1; i < headingCounters.length; i++) {
+        headingCounters[i] = 0
+      }
+      const indexStart = depth === 1 ? 1 : 2
+      const index = headingCounters.slice(indexStart, depth + 1).filter(Boolean).join(`.`)
+      return styledContent(
+        tag,
+        `<span class="heading-index heading-index-${tag}">${index}</span><span class="heading-content">${text}</span>`,
+      )
     },
 
     paragraph({ tokens }: Tokens.Paragraph): string {
@@ -262,9 +273,10 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
         const escapedText = text.replace(DOUBLE_QUOTE_REGEX, `&quot;`)
         pendingAttr = ` data-language-pending="${langText}" data-raw-code="${escapedText}" data-show-line-number="${opts.isShowLineNumber}"`
       }
+      const languageAttr = escapeHtml(langText || `plaintext`)
       const code = `<code class="language-${lang}"${pendingAttr}>${highlighted}</code>`
 
-      return `<pre class="hljs code__pre">${span}${code}</pre>`
+      return `<pre class="hljs code__pre" data-language="${languageAttr}">${span}${code}</pre>`
     },
 
     codespan({ text }: Tokens.Codespan): string {
@@ -298,8 +310,8 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
       listCounters[listCounters.length - 1] = idx + 1
 
       const prefix = ordered
-        ? `${idx}. `
-        : `• `
+        ? `${idx}.`
+        : `•`
 
       // 渲染内容：优先 inline，fallback 去掉 <p> 包裹
       let content: string
@@ -314,7 +326,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
 
       return styledContent(
         `listitem`,
-        `${prefix}${content}`,
+        `<span class="list-marker">${prefix}</span> <span class="list-content">${content}</span>`,
         `li`,
       )
     },
@@ -376,7 +388,7 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
         })
         .join(``)
       return `
-        <section style="max-width: 100%; overflow: auto; -webkit-overflow-scrolling: touch">
+        <section class="table-wrapper" style="max-width: 100%; overflow: auto; -webkit-overflow-scrolling: touch">
           <table class="preview-table">
             <thead>${headerRow}</thead>
             <tbody>${body}</tbody>
@@ -423,7 +435,10 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     buildFootnotes,
     setOptions,
     reset,
-    parseFrontMatterAndContent,
+    parseFrontMatterAndContent(markdownText: string) {
+      headingCounters.fill(0)
+      return parseFrontMatterAndContent(markdownText)
+    },
     buildReadingTime,
     createContainer(content: string) {
       return styledContent(`container mx-auto`, content, `section`)

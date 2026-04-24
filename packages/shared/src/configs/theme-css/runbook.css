@@ -1,0 +1,151 @@
+/**
+ * MD Runbook theme
+ * Operational playbook layout for deployment, incident, and checklist posts.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #ffffff;
+}
+
+h1 {
+  display: block;
+  padding: 0.85em 1em;
+  border: 2px solid #111827;
+  border-radius: 0;
+  margin: 1.4em 8px 1em;
+  color: #111827;
+  background: #fef3c7;
+  font-size: calc(var(--md-font-size) * 1.32);
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.6em 0.85em;
+  border: 1px solid #d1d5db;
+  border-left: 6px solid #111827;
+  margin: 2em 8px 1em;
+  color: #111827;
+  background: #f9fafb;
+  font-size: calc(var(--md-font-size) * 1.16);
+  text-align: left;
+}
+
+.heading-index-h2 {
+  display: inline;
+  margin-right: 0.45em;
+  color: #b45309;
+  font-size: 0.78em;
+  font-weight: 800;
+}
+
+h3 {
+  padding: 0.35em 0.65em;
+  border-left: 0;
+  margin: 1.55em 8px 0.75em;
+  color: #111827;
+  background: #e5e7eb;
+  font-size: calc(var(--md-font-size) * 1.05);
+}
+
+p {
+  margin: 1em 8px;
+  color: #1f2937;
+  letter-spacing: 0;
+  line-height: 1.82;
+}
+
+strong {
+  color: #991b1b;
+}
+
+a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+blockquote {
+  padding: 0.9em 1em;
+  border: 2px solid #f59e0b;
+  border-radius: 0;
+  margin: 1.15em 8px;
+  color: #78350f;
+  background: #fffbeb;
+}
+
+blockquote > p {
+  margin: 0;
+  color: #78350f;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  position: relative;
+  border: 2px solid #111827;
+  border-radius: 0;
+  margin: 1.2em 8px;
+  padding-top: 2.25em !important;
+}
+
+pre.code__pre::before,
+.hljs.code__pre::before {
+  content: 'COMMAND / ' attr(data-language);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5em 0.8em;
+  border-bottom: 1px solid #374151;
+  color: #fbbf24;
+  font-size: 0.78em;
+  text-align: left;
+}
+
+code {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.listitem {
+  display: flex;
+  gap: 0.65em;
+  align-items: flex-start;
+  padding: 0.45em 0;
+  margin: 0.35em 8px;
+  border-bottom: 1px dashed #d1d5db;
+  color: #1f2937;
+}
+
+.list-marker {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.table-wrapper {
+  margin: 1.2em 8px;
+  border: 2px solid #111827;
+}
+
+table {
+  margin: 0;
+}
+
+th {
+  color: #111827;
+  background: #fef3c7;
+}
+
+th,
+td {
+  border: 1px solid #111827;
+  padding: 0.58em 0.78em;
+}
+
+.katex-block {
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+}

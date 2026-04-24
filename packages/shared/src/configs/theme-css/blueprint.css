@@ -1,0 +1,146 @@
+/**
+ * MD Blueprint theme
+ * Blue technical schematic style for architecture and system design posts.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #fbfdff;
+}
+
+h1 {
+  display: block;
+  padding: 0.75em 0.9em;
+  border: 1px solid #b9d7f0;
+  border-left: 6px solid var(--md-primary-color);
+  margin: 1.5em 8px 1em;
+  color: #0b3158;
+  background: #eef7ff;
+  font-size: calc(var(--md-font-size) * 1.38);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.35em 0.7em;
+  border: 1px solid #b9d7f0;
+  border-left: 4px solid var(--md-primary-color);
+  margin: 2.2em 8px 1em;
+  color: #0b3158;
+  background: #f3f9ff;
+  font-size: calc(var(--md-font-size) * 1.18);
+  text-align: left;
+}
+
+h3 {
+  padding-left: 0.7em;
+  border-left: 3px solid #60a5fa;
+  margin: 1.7em 8px 0.7em;
+  color: #155e9f;
+  font-size: calc(var(--md-font-size) * 1.1);
+}
+
+h4,
+h5,
+h6 {
+  color: #0f4c81;
+}
+
+p {
+  margin: 1.05em 8px;
+  color: #243b53;
+  letter-spacing: 0;
+  line-height: 1.9;
+}
+
+strong {
+  color: #0b3158;
+}
+
+a {
+  color: #0b6bcb;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+blockquote {
+  padding: 1em;
+  border: 1px dashed #8ec5ff;
+  border-left: 5px solid #3388d6;
+  border-radius: 0;
+  margin: 1.2em 8px;
+  color: #1f4e79;
+  background: #f4faff;
+}
+
+blockquote > p {
+  color: #1f4e79;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid #7fb3dd;
+  border-radius: 0;
+}
+
+code {
+  color: #0b5798;
+  background: #eaf5ff;
+  border: 1px solid #cfe6fa;
+}
+
+pre.code__pre > code,
+.hljs.code__pre > code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+ul {
+  list-style: square;
+}
+
+li {
+  margin: 0.45em 8px;
+  color: #243b53;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1.2em 8px;
+}
+
+th {
+  color: #0b3158;
+  background: #eaf5ff;
+}
+
+th,
+td {
+  border: 1px solid #b9d7f0;
+  padding: 0.55em 0.8em;
+}
+
+hr {
+  border: none;
+  height: 1px;
+  background: #b9d7f0;
+}
+
+img {
+  border: 1px solid #b9d7f0;
+  border-radius: 2px;
+  padding: 3px;
+  background: #fff;
+}
+
+.katex-block {
+  background: #f4faff;
+  border: 1px dashed #8ec5ff;
+}
+
+.markup-highlight {
+  color: #0b3158;
+  background: #dbeeff;
+}

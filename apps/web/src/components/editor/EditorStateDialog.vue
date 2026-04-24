@@ -72,7 +72,9 @@ function getAllStoreStates() {
     fontFamily: themeStore.fontFamily,
     fontSize: themeStore.fontSize,
     primaryColor: themeStore.primaryColor,
+    isPrimaryColorCustom: themeStore.isPrimaryColorCustom,
     codeBlockTheme: themeStore.codeBlockTheme,
+    isCodeBlockThemeCustom: themeStore.isCodeBlockThemeCustom,
     legend: themeStore.legend,
     isMacCodeBlock: themeStore.isMacCodeBlock,
     isShowLineNumber: themeStore.isShowLineNumber,
@@ -270,8 +272,12 @@ function applyImportedConfig() {
         themeStore.fontSize = value
       else if (key === `primaryColor`)
         themeStore.primaryColor = value
+      else if (key === `isPrimaryColorCustom`)
+        themeStore.isPrimaryColorCustom = value
       else if (key === `codeBlockTheme`)
         themeStore.codeBlockTheme = value
+      else if (key === `isCodeBlockThemeCustom`)
+        themeStore.isCodeBlockThemeCustom = value
       else if (key === `legend`)
         themeStore.legend = value
       else if (key === `isMacCodeBlock`)

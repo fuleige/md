@@ -1,0 +1,171 @@
+/**
+ * MD Code Lab theme
+ * Lab notebook for runnable examples, experiments, and debugging notes.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #f8fafc;
+}
+
+h1 {
+  display: block;
+  padding: 0.9em 1em;
+  border: 1px solid #d7dee8;
+  border-radius: 10px;
+  margin: 1.4em 8px 1em;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: calc(var(--md-font-size) * 1.36);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.65em 0.9em;
+  border: 1px solid #d7dee8;
+  border-left: 5px solid #22c55e;
+  border-radius: 8px;
+  margin: 2em 8px 1em;
+  color: #14532d;
+  background: #ffffff;
+  font-size: calc(var(--md-font-size) * 1.18);
+  text-align: left;
+}
+
+.heading-index-h2 {
+  display: inline;
+  margin-right: 0.45em;
+  color: #0284c7;
+  font-size: 0.78em;
+  font-weight: 800;
+}
+
+h3 {
+  padding-left: 0.75em;
+  border-left: 3px solid #38bdf8;
+  margin: 1.6em 8px 0.75em;
+  color: #075985;
+}
+
+h4,
+h5,
+h6 {
+  color: #334155;
+}
+
+p {
+  margin: 1em 8px;
+  color: #334155;
+  letter-spacing: 0;
+  line-height: 1.85;
+}
+
+strong {
+  color: #0f172a;
+}
+
+a {
+  color: #0369a1;
+  border-bottom: 1px solid rgba(3, 105, 161, 0.3);
+}
+
+blockquote {
+  padding: 1em;
+  border: 1px solid #bbf7d0;
+  border-left: 5px solid #22c55e;
+  border-radius: 8px;
+  margin: 1.15em 8px;
+  color: #14532d;
+  background: #f0fdf4;
+}
+
+blockquote > p {
+  color: #14532d;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  position: relative;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  margin: 1.25em 8px;
+  padding-top: 2.45em !important;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+}
+
+pre.code__pre::before,
+.hljs.code__pre::before {
+  content: attr(data-language);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: auto;
+  padding: 0.55em 0.9em;
+  border-bottom: 1px solid #1f2937;
+  color: #94a3b8;
+  font-size: 0.78em;
+  line-height: 1;
+  text-align: left;
+}
+
+code {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.listitem {
+  display: flex;
+  gap: 0.65em;
+  align-items: flex-start;
+  margin: 0.55em 8px;
+  color: #334155;
+}
+
+.list-marker {
+  color: #16a34a;
+  font-weight: 700;
+}
+
+.table-wrapper {
+  margin: 1.2em 8px;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+}
+
+table {
+  margin: 0;
+  color: #334155;
+}
+
+th {
+  color: #0f172a;
+  background: #e2e8f0;
+}
+
+th,
+td {
+  border: 1px solid #d7dee8;
+  padding: 0.6em 0.8em;
+  color: #334155;
+}
+
+img {
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+}
+
+figcaption,
+.md-figcaption {
+  color: #64748b;
+}
+
+.katex-block {
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #ffffff;
+}

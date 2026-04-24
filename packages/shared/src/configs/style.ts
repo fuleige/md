@@ -1,4 +1,5 @@
 import type { IConfigOption } from '../types'
+import type { ThemeName } from './theme-css'
 import { themeOptions } from './theme'
 
 export const fontFamilyOptions: IConfigOption[] = [
@@ -99,6 +100,41 @@ export const colorOptions: IConfigOption[] = [
     desc: `柔和低调`,
   },
   {
+    label: `工程蓝`,
+    value: `#2563EB`,
+    desc: `文档清晰`,
+  },
+  {
+    label: `接口蓝`,
+    value: `#0969DA`,
+    desc: `规格说明`,
+  },
+  {
+    label: `代码绿`,
+    value: `#16A34A`,
+    desc: `实战示例`,
+  },
+  {
+    label: `运行青`,
+    value: `#0F766E`,
+    desc: `运维稳定`,
+  },
+  {
+    label: `评审紫`,
+    value: `#7C3AED`,
+    desc: `方案观点`,
+  },
+  {
+    label: `教程橙`,
+    value: `#D97706`,
+    desc: `步骤重点`,
+  },
+  {
+    label: `故障红`,
+    value: `#DC2626`,
+    desc: `风险警示`,
+  },
+  {
     label: `樱花粉`,
     value: `#FFB7C5`,
     desc: `浪漫甜美`,
@@ -195,9 +231,32 @@ const codeBlockThemeList = [
   `xt256`,
 ]
 
+export const codeBlockThemeValueMap: Record<string, string> = Object.fromEntries(
+  codeBlockThemeList.map(codeBlockTheme => [codeBlockTheme, `${codeBlockUrlPrefix}${codeBlockTheme}.min.css`]),
+)
+
+export const themeCodeBlockThemeMap: Record<ThemeName, string> = {
+  default: codeBlockThemeValueMap[`github-dark`],
+  grace: codeBlockThemeValueMap.github,
+  simple: codeBlockThemeValueMap.github,
+  engineering: codeBlockThemeValueMap[`github-dark-dimmed`],
+  blueprint: codeBlockThemeValueMap[`github-dark`],
+  terminal: codeBlockThemeValueMap[`atom-one-dark`],
+  research: codeBlockThemeValueMap[`intellij-light`],
+  notebook: codeBlockThemeValueMap[`atom-one-dark-reasonable`],
+  magazine: codeBlockThemeValueMap[`github-dark`],
+  card: codeBlockThemeValueMap[`github-dark-dimmed`],
+  apiSpec: codeBlockThemeValueMap[`github-dark`],
+  stepGuide: codeBlockThemeValueMap[`atom-one-dark`],
+  codeLab: codeBlockThemeValueMap[`tokyo-night-dark`],
+  runbook: codeBlockThemeValueMap[`stackoverflow-dark`],
+  architecture: codeBlockThemeValueMap[`github-dark-dimmed`],
+  briefing: codeBlockThemeValueMap[`night-owl`],
+}
+
 export const codeBlockThemeOptions: IConfigOption[] = codeBlockThemeList.map(codeBlockTheme => ({
   label: codeBlockTheme,
-  value: `${codeBlockUrlPrefix}${codeBlockTheme}.min.css`,
+  value: codeBlockThemeValueMap[codeBlockTheme],
   desc: ``,
 }))
 

@@ -1,0 +1,151 @@
+/**
+ * MD Architecture Review theme
+ * Decision-record layout for architecture tradeoffs and system decomposition.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #fcfcfd;
+}
+
+h1 {
+  display: block;
+  padding: 0.8em 1em;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  margin: 1.4em 8px 1em;
+  color: #101828;
+  background: #ffffff;
+  font-size: calc(var(--md-font-size) * 1.36);
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.65em 0.85em;
+  border-radius: 8px;
+  margin: 2.1em 8px 1em;
+  color: #101828;
+  background: linear-gradient(90deg, #eef4ff, #ffffff);
+  border: 1px solid #d7dee8;
+  font-size: calc(var(--md-font-size) * 1.18);
+  text-align: left;
+}
+
+.heading-index-h2 {
+  display: inline-block;
+  margin-bottom: 0.3em;
+  margin-right: 0.45em;
+  color: var(--md-primary-color);
+  font-size: 0.72em;
+  font-weight: 800;
+}
+
+h3 {
+  padding: 0.4em 0.7em;
+  border-left: 4px solid #667085;
+  border-radius: 4px;
+  margin: 1.6em 8px 0.75em;
+  color: #344054;
+  background: #f2f4f7;
+}
+
+p {
+  margin: 1em 8px;
+  color: #344054;
+  letter-spacing: 0;
+  line-height: 1.88;
+}
+
+strong {
+  color: #101828;
+}
+
+a {
+  color: var(--md-primary-color);
+  font-weight: 600;
+}
+
+blockquote {
+  padding: 1em;
+  border: 1px solid #d7dee8;
+  border-left: 5px solid #12b76a;
+  border-radius: 8px;
+  margin: 1.15em 8px;
+  color: #184e35;
+  background: #f0fdf4;
+}
+
+blockquote > p {
+  margin: 0;
+  color: #184e35;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  position: relative;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  margin: 1.2em 8px;
+  padding-top: 2.25em !important;
+}
+
+pre.code__pre::before,
+.hljs.code__pre::before {
+  content: 'artifact: ' attr(data-language);
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 0.5em 0.85em;
+  color: #98a2b3;
+  font-size: 0.78em;
+  text-align: left;
+}
+
+code {
+  color: #175cd3;
+  background: #eff8ff;
+  border: 1px solid #b2ddff;
+}
+
+.listitem {
+  display: flex;
+  gap: 0.65em;
+  align-items: flex-start;
+  margin: 0.55em 8px;
+  color: #344054;
+}
+
+.list-marker {
+  color: var(--md-primary-color);
+  font-weight: 800;
+}
+
+.table-wrapper {
+  margin: 1.2em 8px;
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+}
+
+table {
+  margin: 0;
+}
+
+th {
+  color: #101828;
+  background: #f2f4f7;
+}
+
+th,
+td {
+  border: 1px solid #d7dee8;
+  padding: 0.58em 0.8em;
+}
+
+.katex-block {
+  border: 1px solid #d7dee8;
+  border-radius: 8px;
+  background: #ffffff;
+}

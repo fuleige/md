@@ -8,7 +8,7 @@ import type { CSSVariableConfig } from './cssVariables'
 import { baseCSSContent, themeMap } from '@md/shared/configs'
 import { processCSS } from './cssProcessor'
 import { wrapCSSWithScope } from './cssScopeWrapper'
-import { generateCSSVariables, generateHeadingStyles } from './cssVariables'
+import { generateCodeBlockCompatibilityStyles, generateCSSVariables, generateHeadingStyles } from './cssVariables'
 import { getThemeInjector } from './themeInjector'
 
 export interface ThemeConfig {
@@ -42,24 +42,28 @@ export async function applyTheme(config: ThemeConfig): Promise<void> {
   // 5. 生成标题样式 CSS（在主题 CSS 之后应用，确保覆盖主题默认样式）
   const headingStylesCSS = generateHeadingStyles(config.variables)
 
-  // 6. 处理用户自定义 CSS（添加作用域）
+  // 6. 生成代码块兼容 CSS（在主题 CSS 之后应用，避免行内 code 样式覆盖 highlight.js）
+  const codeBlockCompatibilityCSS = generateCodeBlockCompatibilityStyles()
+
+  // 7. 处理用户自定义 CSS（添加作用域）
   const scopedCustomCSS = config.customCSS
     ? wrapCSSWithScope(config.customCSS, `#output`)
     : ``
 
-  // 7. 拼接完整 CSS（用户自定义 CSS 在最后，优先级最高）
+  // 8. 拼接完整 CSS（用户自定义 CSS 在最后，优先级最高）
   let mergedCSS = [
     variablesCSS, // CSS 变量（全局）
     baseCSSContent, // 基础样式（全局）
     scopedThemeCSS, // 主题样式（限制在 #output）
     headingStylesCSS, // 标题样式
+    codeBlockCompatibilityCSS, // 代码块兼容样式
     scopedCustomCSS, // 用户自定义 CSS（最后应用，可覆盖预设样式）
   ].filter(Boolean).join(`\n\n`)
 
-  // 8. 解析 CSS 变量（将 var(--xxx) 替换为实际值，供导出/复制内联样式使用）
+  // 9. 解析 CSS 变量（将 var(--xxx) 替换为实际值，供导出/复制内联样式使用）
   mergedCSS = processCSS(mergedCSS)
 
-  // 9. 注入到页面
+  // 10. 注入到页面
   const injector = getThemeInjector()
   injector.inject(mergedCSS)
 }

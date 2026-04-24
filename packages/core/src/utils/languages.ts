@@ -171,7 +171,7 @@ export function highlightAndFormatCode(text: string, language: string, hljs: any
     const lineNumbersHtml = highlightedLines.map((_, idx) => `<section style="padding:0 10px 0 0;line-height:1.75">${idx + 1}</section>`).join(``)
     const codeInnerHtml = highlightedLines.join(`<br/>`)
     const codeLinesHtml = `<div style="white-space:pre;min-width:max-content;line-height:1.75">${codeInnerHtml}</div>`
-    const lineNumberColumnStyles = `text-align:right;padding:8px 0;border-right:1px solid rgba(0,0,0,0.04);user-select:none;background:var(--code-bg,transparent);`
+    const lineNumberColumnStyles = `text-align:right;padding:8px 0;border-right:1px solid var(--md-code-line-number-border,rgba(148,163,184,0.28));color:var(--md-code-line-number-color,rgba(148,163,184,0.95));user-select:none;background:var(--md-code-line-number-bg,transparent);`
 
     highlighted = `
       <section style="display:flex;align-items:flex-start;overflow-x:hidden;overflow-y:auto;width:100%;max-width:100%;padding:0;box-sizing:border-box">

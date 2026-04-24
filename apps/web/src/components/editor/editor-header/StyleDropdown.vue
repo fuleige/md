@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import type {
-  themeMap,
-} from '@md/shared/configs'
+import type { ThemeName } from '@md/shared/configs'
 import type { Format } from 'vue-pick-colors'
 import {
   codeBlockThemeOptions,
@@ -9,7 +7,9 @@ import {
   fontFamilyOptions,
   fontSizeOptions,
   legendOptions,
+  themeCodeBlockThemeMap,
   themeOptions,
+  themePrimaryColorMap,
 } from '@md/shared/configs'
 import { ALargeSmall, Code, Droplet, FileCode, ImageIcon, Palette, Pipette, RotateCcw, SquareCode, Type } from 'lucide-vue-next'
 import PickColors from 'vue-pick-colors'
@@ -38,7 +38,9 @@ const {
   fontFamily,
   fontSize,
   primaryColor,
+  isPrimaryColorCustom,
   codeBlockTheme,
+  isCodeBlockThemeCustom,
   legend,
 } = storeToRefs(themeStore)
 
@@ -53,8 +55,8 @@ function editorRefresh() {
 }
 
 // Theme change handlers
-function themeChanged(newTheme: keyof typeof themeMap) {
-  themeStore.theme = newTheme
+function themeChanged(newTheme: ThemeName) {
+  themeStore.setTheme(newTheme)
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
@@ -75,14 +77,30 @@ function sizeChanged(size: string) {
 }
 
 function colorChanged(newColor: string) {
-  themeStore.primaryColor = newColor
+  themeStore.setPrimaryColor(newColor)
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
 
+function useThemePrimaryColor() {
+  themeStore.useThemePrimaryColor()
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
+
+const recommendedCodeBlockThemeLabel = computed(() => {
+  const themeUrl = themeCodeBlockThemeMap[theme.value]
+  return themeUrl.match(/\/([^/]+)\.min\.css$/)?.[1] || `推荐`
+})
+
 function codeBlockThemeChanged(newTheme: string) {
-  themeStore.codeBlockTheme = newTheme
+  themeStore.setCodeBlockTheme(newTheme)
+  editorRefresh()
+}
+
+function useThemeCodeBlockTheme() {
+  themeStore.useThemeCodeBlockTheme()
   editorRefresh()
 }
 
@@ -152,6 +170,13 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         :change="colorChanged"
         :icon="Droplet"
       />
+      <MenubarCheckboxItem class="pl-2" :checked="!isPrimaryColorCustom" @click="useThemePrimaryColor">
+        <span
+          class="mr-2 h-4 w-4 rounded-full border border-black/10 dark:border-white/20"
+          :style="{ background: themePrimaryColorMap[theme] }"
+        />
+        跟随主题推荐色
+      </MenubarCheckboxItem>
       <StyleOptionMenu
         title="代码块主题"
         :options="codeBlockThemeOptions"
@@ -159,6 +184,11 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         :change="codeBlockThemeChanged"
         :icon="Code"
       />
+      <MenubarCheckboxItem class="pl-2" :checked="!isCodeBlockThemeCustom" @click="useThemeCodeBlockTheme">
+        <Code class="mr-2 h-4 w-4" />
+        跟随主题代码配色
+        <DropdownMenuShortcut>{{ recommendedCodeBlockThemeLabel }}</DropdownMenuShortcut>
+      </MenubarCheckboxItem>
       <StyleOptionMenu
         title="图注格式"
         :options="legendOptions"
@@ -239,6 +269,13 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         :change="colorChanged"
         :icon="Droplet"
       />
+      <MenubarCheckboxItem class="pl-2" :checked="!isPrimaryColorCustom" @click="useThemePrimaryColor">
+        <span
+          class="mr-2 h-4 w-4 rounded-full border border-black/10 dark:border-white/20"
+          :style="{ background: themePrimaryColorMap[theme] }"
+        />
+        跟随主题推荐色
+      </MenubarCheckboxItem>
       <StyleOptionMenu
         title="代码块主题"
         :options="codeBlockThemeOptions"
@@ -246,6 +283,11 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         :change="codeBlockThemeChanged"
         :icon="Code"
       />
+      <MenubarCheckboxItem class="pl-2" :checked="!isCodeBlockThemeCustom" @click="useThemeCodeBlockTheme">
+        <Code class="mr-2 h-4 w-4" />
+        跟随主题代码配色
+        <DropdownMenuShortcut>{{ recommendedCodeBlockThemeLabel }}</DropdownMenuShortcut>
+      </MenubarCheckboxItem>
       <StyleOptionMenu
         title="图注格式"
         :options="legendOptions"

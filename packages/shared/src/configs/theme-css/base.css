@@ -25,6 +25,14 @@ container {
   margin-top: 0 !important;
 }
 
+.heading-index {
+  display: none;
+}
+
+.heading-content {
+  display: inline;
+}
+
 .mermaid-diagram .nodeLabel p {
   color: unset !important;
   letter-spacing: unset !important;

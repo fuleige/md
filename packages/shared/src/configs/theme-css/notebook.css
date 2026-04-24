@@ -1,0 +1,151 @@
+/**
+ * MD Notebook theme
+ * Friendly engineering notebook style for step-by-step explanations.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #fffdf7;
+}
+
+h1 {
+  display: block;
+  padding: 0.65em 0.8em;
+  border: 1px solid #eadfbf;
+  border-left: 6px solid var(--md-primary-color);
+  margin: 1.5em 8px 1em;
+  color: #2f2a1f;
+  background: #fff7db;
+  font-size: calc(var(--md-font-size) * 1.36);
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.45em 0.7em;
+  border: 0;
+  border-left: 5px solid #d69e2e;
+  border-bottom: 1px solid #eadfbf;
+  margin: 2.1em 8px 1em;
+  color: #3d331c;
+  background: #fffaf0;
+  font-size: calc(var(--md-font-size) * 1.18);
+  text-align: left;
+}
+
+h3 {
+  padding-left: 0.7em;
+  border-left: 3px solid var(--md-primary-color);
+  margin: 1.7em 8px 0.7em;
+  color: #4a3f23;
+}
+
+h4,
+h5,
+h6 {
+  color: #4a3f23;
+}
+
+p {
+  margin: 1.05em 8px;
+  color: #3f3a2f;
+  letter-spacing: 0;
+  line-height: 1.9;
+}
+
+strong {
+  color: #2f2a1f;
+}
+
+a {
+  color: #0f766e;
+  border-bottom: 1px solid rgba(15, 118, 110, 0.35);
+}
+
+blockquote {
+  padding: 1em;
+  border-left: 4px solid #d69e2e;
+  border-radius: 6px;
+  margin: 1.2em 8px;
+  color: #4a3f23;
+  background: #fff7db;
+}
+
+blockquote > p {
+  color: #4a3f23;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid #eadfbf;
+  border-radius: 6px;
+}
+
+pre.code__pre > code,
+.hljs.code__pre > code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+}
+
+code {
+  color: #92400e;
+  background: #fff7db;
+  border: 1px solid #f1dfaa;
+}
+
+ul {
+  list-style: disc;
+}
+
+ol,
+ul {
+  padding-left: 1.5em;
+}
+
+li {
+  margin: 0.45em 8px;
+  color: #3f3a2f;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1.2em 8px;
+}
+
+th {
+  color: #3d331c;
+  background: #fff1c2;
+}
+
+th,
+td {
+  border: 1px solid #eadfbf;
+  padding: 0.55em 0.8em;
+}
+
+hr {
+  border: none;
+  border-top: 1px dashed #d6c28a;
+  height: 0;
+}
+
+img {
+  border: 1px solid #eadfbf;
+  border-radius: 6px;
+}
+
+figcaption,
+.md-figcaption {
+  color: #8a7550;
+}
+
+.katex-block {
+  background: #fffaf0;
+  border: 1px solid #eadfbf;
+  border-radius: 6px;
+}
+
+.markup-highlight {
+  color: #3d331c;
+  background: #fde68a;
+}

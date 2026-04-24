@@ -1,6 +1,6 @@
 import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
 import { applyTheme } from '@md/core'
-import { defaultStyleConfig, widthOptions } from '@md/shared/configs'
+import { defaultStyleConfig, themeCodeBlockThemeMap, themePrimaryColorMap, widthOptions } from '@md/shared/configs'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
@@ -22,8 +22,14 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 主色
   const primaryColor = store.reactive(`color`, defaultStyleConfig.primaryColor)
 
+  // 是否使用了用户手动选择的主题色。false 时切换主题会跟随该主题的推荐色。
+  const isPrimaryColorCustom = store.reactive(addPrefix(`primary_color_custom`), false)
+
   // 代码块主题
   const codeBlockTheme = store.reactive(`codeBlockTheme`, defaultStyleConfig.codeBlockTheme)
+
+  // 是否使用了用户手动选择的代码块主题。false 时切换文章主题会跟随推荐代码配色。
+  const isCodeBlockThemeCustom = store.reactive(addPrefix(`code_block_theme_custom`), false)
 
   // 图注格式
   const legend = store.reactive(`legend`, defaultStyleConfig.legend)
@@ -74,7 +80,9 @@ export const useThemeStore = defineStore(`theme`, () => {
     fontFamily.value = defaultStyleConfig.fontFamily
     fontSize.value = defaultStyleConfig.fontSize
     primaryColor.value = defaultStyleConfig.primaryColor
+    isPrimaryColorCustom.value = false
     codeBlockTheme.value = defaultStyleConfig.codeBlockTheme
+    isCodeBlockThemeCustom.value = false
     legend.value = defaultStyleConfig.legend
     headingStyles.value = { ...defaultStyleConfig.headingStyles }
 
@@ -93,6 +101,36 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 获取标题样式
   const getHeadingStyle = (level: HeadingLevel): HeadingStyleType => {
     return headingStyles.value[level] || `default`
+  }
+
+  const setTheme = (newTheme: ThemeName) => {
+    theme.value = newTheme
+    if (!isPrimaryColorCustom.value) {
+      primaryColor.value = themePrimaryColorMap[newTheme]
+    }
+    if (!isCodeBlockThemeCustom.value) {
+      codeBlockTheme.value = themeCodeBlockThemeMap[newTheme]
+    }
+  }
+
+  const setPrimaryColor = (newColor: string) => {
+    primaryColor.value = newColor
+    isPrimaryColorCustom.value = true
+  }
+
+  const useThemePrimaryColor = () => {
+    primaryColor.value = themePrimaryColorMap[theme.value]
+    isPrimaryColorCustom.value = false
+  }
+
+  const setCodeBlockTheme = (newTheme: string) => {
+    codeBlockTheme.value = newTheme
+    isCodeBlockThemeCustom.value = true
+  }
+
+  const useThemeCodeBlockTheme = () => {
+    codeBlockTheme.value = themeCodeBlockThemeMap[theme.value]
+    isCodeBlockThemeCustom.value = false
   }
 
   // 切换 highlight.js 代码主题
@@ -147,7 +185,9 @@ export const useThemeStore = defineStore(`theme`, () => {
     fontSize,
     fontSizeNumber,
     primaryColor,
+    isPrimaryColorCustom,
     codeBlockTheme,
+    isCodeBlockThemeCustom,
     legend,
     isMacCodeBlock,
     isShowLineNumber,
@@ -166,6 +206,11 @@ export const useThemeStore = defineStore(`theme`, () => {
     toggleUseIndent,
     toggleUseJustify,
     resetStyle,
+    setTheme,
+    setPrimaryColor,
+    useThemePrimaryColor,
+    setCodeBlockTheme,
+    useThemeCodeBlockTheme,
     updateCodeTheme,
     applyCurrentTheme,
     setHeadingStyle,

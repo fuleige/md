@@ -2,7 +2,7 @@
 import type {
   HeadingLevel,
   HeadingStyleType,
-  themeMap,
+  ThemeName,
 } from '@md/shared/configs'
 import type { Format } from 'vue-pick-colors'
 import {
@@ -13,7 +13,9 @@ import {
   headingLevelOptions,
   headingStyleOptions,
   legendOptions,
+  themeCodeBlockThemeMap,
   themeOptions,
+  themePrimaryColorMap,
 } from '@md/shared/configs'
 import { X } from 'lucide-vue-next'
 import PickColors from 'vue-pick-colors'
@@ -31,7 +33,9 @@ const {
   fontFamily,
   fontSize,
   primaryColor,
+  isPrimaryColorCustom,
   codeBlockTheme,
+  isCodeBlockThemeCustom,
   legend,
   isMacCodeBlock,
   isShowLineNumber,
@@ -76,8 +80,8 @@ function editorRefresh() {
 }
 
 // Theme change handlers
-function themeChanged(newTheme: keyof typeof themeMap) {
-  themeStore.theme = newTheme
+function themeChanged(newTheme: ThemeName) {
+  themeStore.setTheme(newTheme)
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
@@ -98,14 +102,30 @@ function sizeChanged(size: string) {
 }
 
 function colorChanged(newColor: string) {
-  themeStore.primaryColor = newColor
+  themeStore.setPrimaryColor(newColor)
   // 使用新主题系统
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
 
+function useThemePrimaryColor() {
+  themeStore.useThemePrimaryColor()
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
+
+const recommendedCodeBlockThemeLabel = computed(() => {
+  const themeUrl = themeCodeBlockThemeMap[theme.value]
+  return themeUrl.match(/\/([^/]+)\.min\.css$/)?.[1] || `推荐`
+})
+
 function codeBlockThemeChanged(newTheme: string) {
-  themeStore.codeBlockTheme = newTheme
+  themeStore.setCodeBlockTheme(newTheme)
+  editorRefresh()
+}
+
+function useThemeCodeBlockTheme() {
+  themeStore.useThemeCodeBlockTheme()
   editorRefresh()
 }
 
@@ -215,6 +235,10 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
               'border-black dark:border-white border-2': theme === value,
             }" @click="themeChanged(value)"
           >
+            <span
+              class="mr-1.5 inline-block h-3 w-3 shrink-0 rounded-full border border-black/10 dark:border-white/20"
+              :style="{ background: themePrimaryColorMap[value] }"
+            />
             {{ label }}
           </Button>
         </div>
@@ -244,6 +268,17 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       </div>
       <div class="space-y-2">
         <h2>主题色</h2>
+        <Button
+          class="w-full justify-start" variant="outline" :class="{
+            'border-black dark:border-white border-2': !isPrimaryColorCustom,
+          }" @click="useThemePrimaryColor"
+        >
+          <span
+            class="mr-2 inline-block h-4 w-4 rounded-full border border-black/10 dark:border-white/20"
+            :style="{ background: themePrimaryColorMap[theme] }"
+          />
+          当前主题推荐色
+        </Button>
         <div class="grid grid-cols-3 justify-items-center gap-2">
           <Button
             v-for="{ label, value } in colorOptions" :key="value" class="w-full" variant="outline" :class="{
@@ -296,6 +331,14 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       </div>
       <div class="space-y-2">
         <h2>代码块主题</h2>
+        <Button
+          class="w-full justify-between" variant="outline" :class="{
+            'border-black dark:border-white border-2': !isCodeBlockThemeCustom,
+          }" @click="useThemeCodeBlockTheme"
+        >
+          <span>当前主题推荐代码配色</span>
+          <span class="text-xs text-muted-foreground">{{ recommendedCodeBlockThemeLabel }}</span>
+        </Button>
         <div>
           <Select v-model="codeBlockTheme" @update:model-value="codeBlockThemeChanged">
             <SelectTrigger>

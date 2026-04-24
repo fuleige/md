@@ -1,0 +1,149 @@
+/**
+ * MD Research Paper theme
+ * Whitepaper-like layout for algorithms, analysis, and long-form reasoning.
+ */
+
+section.container {
+  padding: 0.1em 0;
+  background: #fff;
+}
+
+h1 {
+  display: block;
+  padding: 0 0 0.75em;
+  border-bottom: 1px solid #111827;
+  margin: 1.8em 8px 1.1em;
+  color: #111827;
+  background: transparent;
+  font-size: calc(var(--md-font-size) * 1.5);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid #d1d5db;
+  margin: 2.4em 8px 1em;
+  color: #111827;
+  background: transparent;
+  font-size: calc(var(--md-font-size) * 1.24);
+  text-align: left;
+}
+
+h3 {
+  padding-left: 0;
+  border-left: 0;
+  margin: 1.8em 8px 0.7em;
+  color: #374151;
+  font-size: calc(var(--md-font-size) * 1.1);
+}
+
+h4,
+h5,
+h6 {
+  color: #374151;
+}
+
+p {
+  margin: 1em 8px;
+  color: #1f2937;
+  letter-spacing: 0;
+  line-height: 1.95;
+}
+
+strong {
+  color: #111827;
+}
+
+a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+blockquote {
+  padding: 0.9em 1em;
+  border-left: 3px solid #9ca3af;
+  border-radius: 0;
+  margin: 1.2em 8px;
+  color: #374151;
+  background: #f9fafb;
+}
+
+blockquote > p {
+  color: #374151;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+}
+
+pre.code__pre > code,
+.hljs.code__pre > code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+  line-height: 1.75;
+}
+
+code {
+  color: #991b1b;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+ol,
+ul {
+  padding-left: 1.55em;
+}
+
+li {
+  margin: 0.4em 8px;
+  color: #1f2937;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1.3em 8px;
+  color: #1f2937;
+}
+
+th {
+  color: #111827;
+  background: #f3f4f6;
+}
+
+th,
+td {
+  border: 1px solid #d1d5db;
+  padding: 0.55em 0.8em;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid #d1d5db;
+  height: 0;
+}
+
+img {
+  border-radius: 2px;
+}
+
+figcaption,
+.md-figcaption {
+  color: #6b7280;
+}
+
+.katex-block {
+  padding: 0.8em 0;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.markup-highlight {
+  color: #111827;
+  background: #fef3c7;
+}

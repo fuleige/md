@@ -1,0 +1,156 @@
+/**
+ * MD Engineering Manual theme
+ * Calm, dense, and documentation-oriented for technical explainers.
+ */
+
+section.container {
+  padding: 0.2em 0;
+}
+
+h1 {
+  display: block;
+  padding: 0 0 0.7em;
+  border-bottom: 3px solid var(--md-primary-color);
+  margin: 1.6em 8px 1em;
+  color: #172033;
+  background: transparent;
+  font-size: calc(var(--md-font-size) * 1.45);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.55em 0.8em;
+  border-left: 5px solid var(--md-primary-color);
+  border-radius: 0;
+  margin: 2.6em 8px 1.1em;
+  color: #14213d;
+  background: #f2f6fb;
+  font-size: calc(var(--md-font-size) * 1.22);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h3 {
+  padding: 0 0 0.35em;
+  border-left: 0;
+  border-bottom: 1px solid #d7dee8;
+  margin: 2em 8px 0.8em;
+  color: var(--md-primary-color);
+  font-size: calc(var(--md-font-size) * 1.12);
+  line-height: 1.45;
+}
+
+h4,
+h5,
+h6 {
+  margin: 1.4em 8px 0.6em;
+  color: #1f2937;
+  font-size: var(--md-font-size);
+  font-weight: 700;
+}
+
+p {
+  margin: 1.05em 8px;
+  color: #243044;
+  letter-spacing: 0;
+  line-height: 1.85;
+}
+
+strong {
+  color: #101828;
+  font-weight: 700;
+}
+
+a {
+  color: var(--md-primary-color);
+  border-bottom: 1px solid rgba(15, 76, 129, 0.28);
+}
+
+blockquote {
+  padding: 0.9em 1em;
+  border-left: 4px solid #64748b;
+  border-radius: 0;
+  margin: 1.2em 8px;
+  color: #334155;
+  background: #f8fafc;
+}
+
+blockquote > p {
+  margin: 0.3em 0;
+  color: #334155;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border: 1px solid #d8dee9;
+  border-radius: 4px;
+  margin: 1.2em 8px;
+  box-shadow: none;
+}
+
+pre.code__pre > code,
+.hljs.code__pre > code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+  font-size: 0.92em;
+  line-height: 1.7;
+}
+
+code {
+  color: #b42318;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 3px;
+}
+
+ul,
+ol {
+  padding-left: 1.45em;
+}
+
+li {
+  margin: 0.45em 8px;
+  color: #243044;
+}
+
+table {
+  border-collapse: collapse;
+  margin: 1.2em 8px;
+  font-size: 0.95em;
+  box-shadow: none;
+}
+
+th {
+  color: #111827;
+  background: #edf2f7;
+}
+
+th,
+td {
+  border: 1px solid #d7dee8;
+  padding: 0.55em 0.75em;
+}
+
+img {
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+}
+
+figcaption,
+.md-figcaption {
+  color: #64748b;
+  letter-spacing: 0;
+}
+
+.katex-block {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+}
+
+.markup-highlight {
+  color: #101828;
+  background: #dbeafe;
+}

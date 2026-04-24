@@ -53,9 +53,10 @@ export const useRenderStore = defineStore(`render`, () => {
     let i = 0
     for (const item of list) {
       item.setAttribute(`id`, `${i}`)
+      const contentEl = item.querySelector(`.heading-content`)
       titleList.value.push({
         url: `#${i}`,
-        title: `${item.textContent}`,
+        title: `${contentEl?.textContent || item.textContent}`,
         level: Number(item.tagName.slice(1)),
       })
       i++

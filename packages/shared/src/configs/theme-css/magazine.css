@@ -1,0 +1,162 @@
+/**
+ * MD Tech Column theme
+ * Editorial layout for polished technical storytelling.
+ */
+
+section.container {
+  padding: 0.1em 0;
+}
+
+h1 {
+  display: block;
+  padding: 0.25em 0 0.65em;
+  border-bottom: 4px solid #111827;
+  margin: 1.4em 8px 1em;
+  color: #111827;
+  background: transparent;
+  font-size: calc(var(--md-font-size) * 1.6);
+  line-height: 1.25;
+  text-align: left;
+}
+
+h2 {
+  display: block;
+  padding: 0.4em 0;
+  border: 0;
+  margin: 2.3em 8px 1em;
+  color: #111827;
+  background: transparent;
+  font-size: calc(var(--md-font-size) * 1.28);
+  line-height: 1.35;
+  text-align: left;
+}
+
+h2::after {
+  content: '';
+  display: block;
+  width: 42px;
+  height: 3px;
+  margin-top: 0.45em;
+  background: var(--md-primary-color);
+}
+
+h3 {
+  padding-left: 0;
+  border-left: 0;
+  margin: 1.8em 8px 0.7em;
+  color: var(--md-primary-color);
+  font-size: calc(var(--md-font-size) * 1.12);
+}
+
+h4,
+h5,
+h6 {
+  color: #111827;
+}
+
+p {
+  margin: 1.1em 8px;
+  color: #2f3747;
+  letter-spacing: 0;
+  line-height: 1.9;
+}
+
+strong {
+  color: #111827;
+  background: linear-gradient(to top, rgba(250, 204, 21, 0.35) 45%, transparent 45%);
+}
+
+a {
+  color: var(--md-primary-color);
+  font-weight: 600;
+}
+
+blockquote {
+  padding: 1.05em 1.1em;
+  border: 0;
+  border-left: 6px solid #111827;
+  border-radius: 0;
+  margin: 1.3em 8px;
+  color: #111827;
+  background: #f3f4f6;
+}
+
+blockquote > p {
+  color: #111827;
+  letter-spacing: 0;
+}
+
+pre.code__pre,
+.hljs.code__pre {
+  border-radius: 8px;
+  margin: 1.25em 8px;
+}
+
+pre.code__pre > code,
+.hljs.code__pre > code {
+  font-family: Menlo, Monaco, Consolas, 'Courier New', monospace;
+  line-height: 1.75;
+}
+
+code {
+  color: #be123c;
+  background: #fff1f2;
+  border: 1px solid #ffe4e6;
+}
+
+ul,
+ol {
+  padding-left: 1.45em;
+}
+
+li {
+  margin: 0.45em 8px;
+  color: #2f3747;
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 1.25em 8px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+}
+
+th {
+  color: #111827;
+  background: #f3f4f6;
+}
+
+th,
+td {
+  border: 0;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.6em 0.85em;
+}
+
+hr {
+  border: 0;
+  height: 3px;
+  width: 48px;
+  margin: 2em 8px;
+  background: #111827;
+}
+
+img {
+  border-radius: 8px;
+}
+
+figcaption,
+.md-figcaption {
+  color: #6b7280;
+}
+
+.katex-block {
+  background: #f9fafb;
+  border-left: 4px solid var(--md-primary-color);
+}
+
+.markup-highlight {
+  color: #111827;
+  background: #fde68a;
+}
