@@ -19,7 +19,7 @@ const exportStore = useExportStore()
 const uiStore = useUIStore()
 
 const { isOpenPostSlider, isOpenFolderPanel } = storeToRefs(uiStore)
-const { toggleShowTemplateDialog, toggleShowImportMdDialog } = uiStore
+const { toggleShowTemplateDialog, toggleShowImportMdDialog, toggleShowPagedImageExportDialog } = uiStore
 
 function openEditorStateDialog() {
   emit(`openEditorState`)
@@ -55,6 +55,10 @@ async function downloadAsPagedImagesZip() {
     const message = error instanceof Error ? error.message : String(error)
     toast.error(`分页图片导出失败：${message}`)
   }
+}
+
+function openPagedImageExportDialog() {
+  toggleShowPagedImageExportDialog(true)
 }
 
 function exportEditorContent2PDF() {
@@ -123,6 +127,10 @@ function exportEditorContent2PDF() {
           <MenubarItem @click="downloadAsPagedImagesZip()">
             <Download class="mr-2 size-4" />
             分页 PNG 图片（ZIP）
+          </MenubarItem>
+          <MenubarItem @click="openPagedImageExportDialog()">
+            <Download class="mr-2 size-4" />
+            自定义分页 PNG 图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>
@@ -211,6 +219,10 @@ function exportEditorContent2PDF() {
           <MenubarItem @click="downloadAsPagedImagesZip()">
             <Download class="mr-2 size-4" />
             分页 PNG 图片（ZIP）
+          </MenubarItem>
+          <MenubarItem @click="openPagedImageExportDialog()">
+            <Download class="mr-2 size-4" />
+            自定义分页 PNG 图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>

@@ -91,6 +91,10 @@ export const useUIStore = defineStore(`ui`, () => {
   const isShowTemplateDialog = ref(false)
   const toggleShowTemplateDialog = useToggle(isShowTemplateDialog)
 
+  // 是否展示自定义分页图片导出对话框
+  const isShowPagedImageExportDialog = ref(false)
+  const toggleShowPagedImageExportDialog = useToggle(isShowPagedImageExportDialog)
+
   // 是否打开重置样式确认对话框
   const isOpenConfirmDialog = ref(false)
 
@@ -176,6 +180,8 @@ export const useUIStore = defineStore(`ui`, () => {
     importMdOpenUrl,
     isShowTemplateDialog,
     toggleShowTemplateDialog,
+    isShowPagedImageExportDialog,
+    toggleShowPagedImageExportDialog,
     isOpenConfirmDialog,
     aiDialogVisible,
     toggleAIDialog,

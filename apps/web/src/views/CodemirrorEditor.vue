@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import EditorPanel from '@/components/editor/EditorPanel.vue'
 import FolderSourcePanel from '@/components/editor/FolderSourcePanel.vue'
+import PagedImageExportDialog from '@/components/editor/PagedImageExportDialog.vue'
 import PreviewPanel from '@/components/editor/PreviewPanel.vue'
 import {
   ResizableHandle,
@@ -281,6 +282,8 @@ onUnmounted(() => {
       <ImportMarkdownDialog />
 
       <TemplateDialog />
+
+      <PagedImageExportDialog />
 
       <AlertDialog v-model:open="isOpenConfirmDialog">
         <AlertDialogContent>
