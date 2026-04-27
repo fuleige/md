@@ -5,6 +5,7 @@ export const storeLabels: Record<string, string> = {
   isMacCodeBlock: `Mac 代码块`,
   isShowHeadingNumber: `标题自动编号`,
   isShowLineNumber: `代码块行号`,
+  isTextCodeBlockWrapped: `文本块自动换行`,
   isCiteStatus: `微信外链接底部引用状态`,
   isCountStatus: `字数统计状态`,
   isUseIndent: `使用缩进`,

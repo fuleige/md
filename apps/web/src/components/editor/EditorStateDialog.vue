@@ -79,6 +79,7 @@ function getAllStoreStates() {
     isMacCodeBlock: themeStore.isMacCodeBlock,
     isShowHeadingNumber: themeStore.isShowHeadingNumber,
     isShowLineNumber: themeStore.isShowLineNumber,
+    isTextCodeBlockWrapped: themeStore.isTextCodeBlockWrapped,
     isCiteStatus: themeStore.isCiteStatus,
     isCountStatus: themeStore.isCountStatus,
     isUseIndent: themeStore.isUseIndent,
@@ -287,6 +288,8 @@ function applyImportedConfig() {
         themeStore.isShowHeadingNumber = value
       else if (key === `isShowLineNumber`)
         themeStore.isShowLineNumber = value
+      else if (key === `isTextCodeBlockWrapped`)
+        themeStore.isTextCodeBlockWrapped = value
       else if (key === `isCiteStatus`)
         themeStore.isCiteStatus = value
       else if (key === `isCountStatus`)

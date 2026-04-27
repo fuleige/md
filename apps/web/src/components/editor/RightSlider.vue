@@ -40,6 +40,7 @@ const {
   isMacCodeBlock,
   isShowHeadingNumber,
   isShowLineNumber,
+  isTextCodeBlockWrapped,
   isCiteStatus,
   isUseIndent,
   isUseJustify,
@@ -147,6 +148,11 @@ function showHeadingNumberChanged() {
 
 function showLineNumberChanged() {
   themeStore.isShowLineNumber = !themeStore.isShowLineNumber
+  editorRefresh()
+}
+
+function textCodeBlockWrappedChanged() {
+  themeStore.isTextCodeBlockWrapped = !themeStore.isTextCodeBlockWrapped
   editorRefresh()
 }
 
@@ -423,6 +429,25 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
             class="w-full" variant="outline" :class="{
               'border-black dark:border-white border-2': !isShowLineNumber,
             }" @click="isShowLineNumber && showLineNumberChanged()"
+          >
+            关闭
+          </Button>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <h2>文本块自动换行</h2>
+        <div class="grid grid-cols-5 justify-items-center gap-2">
+          <Button
+            class="w-full" variant="outline" :class="{
+              'border-black dark:border-white border-2': isTextCodeBlockWrapped,
+            }" @click="!isTextCodeBlockWrapped && textCodeBlockWrappedChanged()"
+          >
+            开启
+          </Button>
+          <Button
+            class="w-full" variant="outline" :class="{
+              'border-black dark:border-white border-2': !isTextCodeBlockWrapped,
+            }" @click="isTextCodeBlockWrapped && textCodeBlockWrappedChanged()"
           >
             关闭
           </Button>

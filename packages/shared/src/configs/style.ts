@@ -324,6 +324,7 @@ export const defaultStyleConfig = {
   isMacCodeBlock: false,
   isShowHeadingNumber: false,
   isShowLineNumber: false,
+  isTextCodeBlockWrapped: false,
   isCountStatus: false,
   theme: themeOptions[0].value,
   fontFamily: fontFamilyOptions[0].value,

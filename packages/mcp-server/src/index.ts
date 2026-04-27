@@ -66,6 +66,11 @@ server.registerTool(
         .optional()
         .default(false)
         .describe(`Whether to show line numbers in code blocks.`),
+      isTextCodeBlockWrapped: z
+        .boolean()
+        .optional()
+        .default(false)
+        .describe(`Whether to wrap long lines inside text-like fenced blocks instead of using horizontal scrolling.`),
       isShowHeadingNumber: z
         .boolean()
         .optional()
@@ -87,6 +92,7 @@ server.registerTool(
     const renderer = initRenderer({
       isMacCodeBlock: args.isMacCodeBlock,
       isShowLineNumber: args.isShowLineNumber,
+      isTextCodeBlockWrapped: args.isTextCodeBlockWrapped,
       isShowHeadingNumber: args.isShowHeadingNumber,
       citeStatus: args.citeStatus,
       countStatus: args.countStatus,
@@ -277,6 +283,12 @@ server.registerTool(
         type: `boolean`,
         default: false,
         description: `Show line numbers inside code blocks.`,
+      },
+      {
+        name: `isTextCodeBlockWrapped`,
+        type: `boolean`,
+        default: false,
+        description: `Wrap long lines inside text-like fenced blocks instead of using horizontal scrolling.`,
       },
       {
         name: `isShowHeadingNumber`,

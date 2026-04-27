@@ -12,6 +12,7 @@ export interface IOpts {
   isMacCodeBlock?: boolean
   isShowHeadingNumber?: boolean
   isShowLineNumber?: boolean
+  isTextCodeBlockWrapped?: boolean
   themeMode?: 'light' | 'dark'
 }
 

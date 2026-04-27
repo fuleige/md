@@ -40,6 +40,7 @@ const UNDERSCORE_REGEX = /_/g
 const HEADING_TAG_REGEX = /^h\d$/
 const PARAGRAPH_WRAPPER_REGEX = /^<p(?:\s[^>]*)?>([\s\S]*?)<\/p>/
 const MP_WEIXIN_LINK_REGEX = /^https?:\/\/mp\.weixin\.qq\.com/
+const TEXT_LIKE_CODE_LANGUAGES = new Set([``, `text`, `txt`, `plain`, `plaintext`])
 
 function escapeHtml(text: string): string {
   return text
@@ -112,6 +113,10 @@ function transform(legend: string, text: string | null, title: string | null, hr
     }
   }
   return ``
+}
+
+function isTextLikeCodeLanguage(lang: string): boolean {
+  return TEXT_LIKE_CODE_LANGUAGES.has(lang.toLowerCase())
 }
 
 const macCodeSvg = `
@@ -268,25 +273,28 @@ export function initRenderer(opts: IOpts = {}): RendererAPI {
     },
 
     code({ text, lang = `` }: Tokens.Code): string {
-      const langText = lang.split(` `)[0]
-      const isLanguageRegistered = hljs.getLanguage(langText)
-      const language = isLanguageRegistered ? langText : `plaintext`
+      const langText = lang.split(` `)[0].toLowerCase()
+      const isTextLikeLanguage = isTextLikeCodeLanguage(langText)
+      const isLanguageRegistered = !!hljs.getLanguage(langText)
+      const language = isTextLikeLanguage || !isLanguageRegistered ? `plaintext` : langText
+      const shouldWrapCodeBlock = isTextLikeLanguage && !!opts.isTextCodeBlockWrapped
 
-      const highlighted = highlightAndFormatCode(text, language, hljs, !!opts.isShowLineNumber)
+      const highlighted = highlightAndFormatCode(text, language, hljs, !!opts.isShowLineNumber, shouldWrapCodeBlock)
 
       const span = opts.isMacCodeBlock
         ? `<span class="mac-sign" style="padding: 10px 14px 0;">${macCodeSvg}</span>`
         : ``
       // 如果语言未注册，添加 data-language-pending 属性和原始代码文本用于后续动态加载
       let pendingAttr = ``
-      if (!isLanguageRegistered && langText !== `plaintext`) {
+      if (!isTextLikeLanguage && !isLanguageRegistered && langText !== `plaintext`) {
         const escapedText = text.replace(DOUBLE_QUOTE_REGEX, `&quot;`)
-        pendingAttr = ` data-language-pending="${langText}" data-raw-code="${escapedText}" data-show-line-number="${opts.isShowLineNumber}"`
+        pendingAttr = ` data-language-pending="${langText}" data-raw-code="${escapedText}" data-show-line-number="${opts.isShowLineNumber}" data-code-block-wrapped="${shouldWrapCodeBlock}"`
       }
       const languageAttr = escapeHtml(langText || `plaintext`)
       const code = `<code class="language-${lang}"${pendingAttr}>${highlighted}</code>`
+      const wrapClass = shouldWrapCodeBlock ? ` code__pre--wrap` : ``
 
-      return `<pre class="hljs code__pre" data-language="${languageAttr}">${span}${code}</pre>`
+      return `<pre class="hljs code__pre${wrapClass}" data-language="${languageAttr}">${span}${code}</pre>`
     },
 
     codespan({ text }: Tokens.Codespan): string {

@@ -43,6 +43,9 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 是否开启代码块行号显示
   const isShowLineNumber = store.reactive(`isShowLineNumber`, defaultStyleConfig.isShowLineNumber)
 
+  // 是否开启文本类代码块自动换行
+  const isTextCodeBlockWrapped = store.reactive(addPrefix(`text_code_block_wrap`), defaultStyleConfig.isTextCodeBlockWrapped)
+
   // 是否开启微信外链接底部引用
   const isCiteStatus = store.reactive(`isCiteStatus`, defaultStyleConfig.isCiteStatus)
 
@@ -68,6 +71,7 @@ export const useThemeStore = defineStore(`theme`, () => {
   const toggleMacCodeBlock = useToggle(isMacCodeBlock)
   const toggleShowHeadingNumber = useToggle(isShowHeadingNumber)
   const toggleShowLineNumber = useToggle(isShowLineNumber)
+  const toggleTextCodeBlockWrapped = useToggle(isTextCodeBlockWrapped)
   const toggleCiteStatus = useToggle(isCiteStatus)
   const toggleCountStatus = useToggle(isCountStatus)
   const toggleUseIndent = useToggle(isUseIndent)
@@ -79,6 +83,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     isMacCodeBlock.value = defaultStyleConfig.isMacCodeBlock
     isShowHeadingNumber.value = defaultStyleConfig.isShowHeadingNumber
     isShowLineNumber.value = defaultStyleConfig.isShowLineNumber
+    isTextCodeBlockWrapped.value = defaultStyleConfig.isTextCodeBlockWrapped
     isCountStatus.value = defaultStyleConfig.isCountStatus
 
     theme.value = defaultStyleConfig.theme
@@ -197,6 +202,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     isMacCodeBlock,
     isShowHeadingNumber,
     isShowLineNumber,
+    isTextCodeBlockWrapped,
     isCiteStatus,
     isCountStatus,
     isUseIndent,
@@ -208,6 +214,7 @@ export const useThemeStore = defineStore(`theme`, () => {
     toggleMacCodeBlock,
     toggleShowHeadingNumber,
     toggleShowLineNumber,
+    toggleTextCodeBlockWrapped,
     toggleCiteStatus,
     toggleCountStatus,
     toggleUseIndent,

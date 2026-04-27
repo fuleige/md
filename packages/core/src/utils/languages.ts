@@ -154,9 +154,10 @@ function formatHighlightedCode(html: string, preserveNewlines = false): string {
  * @param language 语言名称
  * @param hljs highlight.js 实例
  * @param showLineNumber 是否显示行号
+ * @param codeBlockWrapped 是否自动换行
  * @returns 格式化后的 HTML
  */
-export function highlightAndFormatCode(text: string, language: string, hljs: any, showLineNumber: boolean): string {
+export function highlightAndFormatCode(text: string, language: string, hljs: any, showLineNumber: boolean, codeBlockWrapped = false): string {
   let highlighted = ``
 
   if (showLineNumber) {
@@ -173,12 +174,32 @@ export function highlightAndFormatCode(text: string, language: string, hljs: any
     const codeLinesHtml = `<div style="white-space:pre;min-width:max-content;line-height:1.75">${codeInnerHtml}</div>`
     const lineNumberColumnStyles = `text-align:right;padding:8px 0;border-right:1px solid var(--md-code-line-number-border,rgba(148,163,184,0.28));color:var(--md-code-line-number-color,rgba(148,163,184,0.95));user-select:none;background:var(--md-code-line-number-bg,transparent);`
 
-    highlighted = `
-      <section style="display:flex;align-items:flex-start;overflow-x:hidden;overflow-y:auto;width:100%;max-width:100%;padding:0;box-sizing:border-box">
-        <section class="line-numbers" style="${lineNumberColumnStyles}">${lineNumbersHtml}</section>
-        <section class="code-scroll" style="flex:1 1 auto;overflow-x:auto;overflow-y:visible;padding:8px;min-width:0;box-sizing:border-box">${codeLinesHtml}</section>
-      </section>
-    `
+    if (codeBlockWrapped) {
+      const lineNumberCellStyles = `flex:0 0 auto;min-width:2.5em;text-align:right;padding:0 10px 0 0;border-right:1px solid var(--md-code-line-number-border,rgba(148,163,184,0.28));color:var(--md-code-line-number-color,rgba(148,163,184,0.95));user-select:none;background:var(--md-code-line-number-bg,transparent);line-height:1.75;box-sizing:border-box`
+      const codeLineStyles = `flex:1 1 auto;min-width:0;padding:0 8px 0 10px;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;line-height:1.75;box-sizing:border-box`
+      const wrappedLinesHtml = highlightedLines
+        .map((lineHtml, idx) => `
+          <section class="code-line" style="display:flex;align-items:stretch;width:100%;max-width:100%;box-sizing:border-box">
+            <section class="line-numbers" style="${lineNumberCellStyles}">${idx + 1}</section>
+            <section class="code-line-content" style="${codeLineStyles}">${lineHtml}</section>
+          </section>
+        `)
+        .join(``)
+
+      highlighted = `
+        <section class="code-wrap-lines" style="display:block;width:100%;max-width:100%;overflow:visible;padding:8px 0;box-sizing:border-box">
+          ${wrappedLinesHtml}
+        </section>
+      `
+    }
+    else {
+      highlighted = `
+        <section style="display:flex;align-items:flex-start;overflow-x:hidden;overflow-y:auto;width:100%;max-width:100%;padding:0;box-sizing:border-box">
+          <section class="line-numbers" style="${lineNumberColumnStyles}">${lineNumbersHtml}</section>
+          <section class="code-scroll" style="flex:1 1 auto;overflow-x:auto;overflow-y:visible;padding:8px;min-width:0;box-sizing:border-box">${codeLinesHtml}</section>
+        </section>
+      `
+    }
   }
   else {
     const rawHighlighted = hljs.highlight(text, { language }).value
@@ -191,18 +212,20 @@ export function highlightAndFormatCode(text: string, language: string, hljs: any
 export function highlightCodeBlock(codeBlock: Element, language: string, hljs: any): void {
   const rawCode = codeBlock.getAttribute(`data-raw-code`)
   const showLineNumber = codeBlock.getAttribute(`data-show-line-number`) === `true`
+  const codeBlockWrapped = codeBlock.getAttribute(`data-code-block-wrapped`) === `true`
 
   if (!rawCode)
     return
 
   const text = rawCode.replace(/&quot;/g, `"`)
 
-  const highlighted = highlightAndFormatCode(text, language, hljs, showLineNumber)
+  const highlighted = highlightAndFormatCode(text, language, hljs, showLineNumber, codeBlockWrapped)
 
   codeBlock.innerHTML = highlighted
   codeBlock.removeAttribute(`data-language-pending`)
   codeBlock.removeAttribute(`data-raw-code`)
   codeBlock.removeAttribute(`data-show-line-number`)
+  codeBlock.removeAttribute(`data-code-block-wrapped`)
 }
 
 /**

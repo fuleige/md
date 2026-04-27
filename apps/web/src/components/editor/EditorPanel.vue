@@ -487,6 +487,7 @@ onMounted(() => {
     isMacCodeBlock: themeStore.isMacCodeBlock,
     isShowHeadingNumber: themeStore.isShowHeadingNumber,
     isShowLineNumber: themeStore.isShowLineNumber,
+    isTextCodeBlockWrapped: themeStore.isTextCodeBlockWrapped,
   })
 
   themeStore.applyCurrentTheme()

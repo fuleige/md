@@ -11,7 +11,7 @@ import {
   themeOptions,
   themePrimaryColorMap,
 } from '@md/shared/configs'
-import { ALargeSmall, Code, Droplet, FileCode, ImageIcon, Palette, Pipette, RotateCcw, SquareCode, Type } from 'lucide-vue-next'
+import { ALargeSmall, Code, Droplet, FileCode, ImageIcon, Palette, Pipette, RotateCcw, SquareCode, TextWrap, Type } from 'lucide-vue-next'
 import PickColors from 'vue-pick-colors'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
@@ -42,6 +42,7 @@ const {
   codeBlockTheme,
   isCodeBlockThemeCustom,
   legend,
+  isTextCodeBlockWrapped,
 } = storeToRefs(themeStore)
 
 const { isDark } = storeToRefs(uiStore)
@@ -111,6 +112,11 @@ function legendChanged(newVal: string) {
 
 function macCodeBlockChanged() {
   themeStore.isMacCodeBlock = !themeStore.isMacCodeBlock
+  editorRefresh()
+}
+
+function textCodeBlockWrappedChanged() {
+  themeStore.isTextCodeBlockWrapped = !themeStore.isTextCodeBlockWrapped
   editorRefresh()
 }
 
@@ -226,6 +232,10 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         <SquareCode class="mr-2 h-4 w-4" />
         Mac 代码块
       </MenubarCheckboxItem>
+      <MenubarCheckboxItem class="pl-2" :checked="isTextCodeBlockWrapped" @click="textCodeBlockWrappedChanged">
+        <TextWrap class="mr-2 h-4 w-4" />
+        文本块自动换行
+      </MenubarCheckboxItem>
       <MenubarSeparator />
       <MenubarCheckboxItem class="pl-2" divided @click="resetStyleConfirm">
         <RotateCcw class="mr-2 h-4 w-4" />
@@ -324,6 +334,10 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
       <MenubarCheckboxItem class="pl-2" @click="macCodeBlockChanged">
         <SquareCode class="mr-2 h-4 w-4" />
         Mac 代码块
+      </MenubarCheckboxItem>
+      <MenubarCheckboxItem class="pl-2" :checked="isTextCodeBlockWrapped" @click="textCodeBlockWrappedChanged">
+        <TextWrap class="mr-2 h-4 w-4" />
+        文本块自动换行
       </MenubarCheckboxItem>
       <MenubarSeparator />
       <MenubarCheckboxItem class="pl-2" divided @click="resetStyleConfirm">

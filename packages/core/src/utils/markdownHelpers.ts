@@ -90,6 +90,30 @@ export function postProcessHtml(baseHtml: string, reading: ReadTimeResults, rend
   `
   html += `
     <style>
+      .code__pre--wrap,
+      .code__pre--wrap > code,
+      .code__pre--wrap .code-scroll {
+        overflow-x: hidden !important;
+      }
+
+      .code__pre--wrap > code {
+        display: block !important;
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+      }
+
+      .code__pre--wrap .code-scroll > div,
+      .code__pre--wrap .code-line-content {
+        min-width: 0 !important;
+        white-space: pre-wrap !important;
+        overflow-wrap: anywhere !important;
+        word-break: break-word !important;
+      }
+    </style>
+  `
+  html += `
+    <style>
       h2 strong {
         color: inherit !important;
       }
