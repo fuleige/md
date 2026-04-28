@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PagedImageExportDraft, SliceRange } from '@/stores/export'
-import { Download, Loader2, Plus, RotateCcw, Trash2 } from 'lucide-vue-next'
+import { Download, Loader2, RotateCcw, Trash2 } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { Button } from '@/components/ui/button'
@@ -28,8 +28,14 @@ const isPreparing = ref(false)
 const isExporting = ref(false)
 const errorMessage = ref(``)
 const previewStackRef = ref<HTMLElement | null>(null)
+const hoverInsertPosition = ref<number | null>(null)
+const hoverBoundaryIndex = ref<number | null>(null)
 
 let prepareRequestId = 0
+let dragStartClientY = 0
+let dragStartBoundaryPosition = 0
+let hasDraggedBoundary = false
+let suppressNextBoundaryClick = false
 
 const slices = computed<SliceRange[]>(() => {
   const current = draft.value
@@ -49,11 +55,27 @@ const selectedBoundary = computed(() => {
   const index = activeBoundaryIndex.value
   return index === null ? null : boundaries.value[index] ?? null
 })
+const maxSliceHeight = computed(() => {
+  const current = draft.value
+  return current?.maxSliceHeight ?? current?.pageHeight ?? 0
+})
+const oversizedSliceCount = computed(() => {
+  const limit = maxSliceHeight.value
+  if (limit <= 0) {
+    return 0
+  }
+
+  return slices.value.filter(slice => isSliceOversized(slice)).length
+})
+const undersizedSliceCount = computed(() => {
+  return slices.value.filter(slice => isSliceUndersized(slice)).length
+})
 
 function slicesToBoundaries(sliceRanges: SliceRange[], totalHeight: number) {
   return sliceRanges
     .map(slice => Math.round(slice.end))
     .filter(position => position > 0 && position < totalHeight)
+    .sort((a, b) => a - b)
 }
 
 function getBoundaryPercent(position: number) {
@@ -63,6 +85,10 @@ function getBoundaryPercent(position: number) {
   }
 
   return `${(position / current.totalHeight) * 100}%`
+}
+
+function getPositionPercent(position: number | null) {
+  return position === null ? `0%` : getBoundaryPercent(position)
 }
 
 function getSliceStyle(slice: SliceRange, index: number) {
@@ -82,8 +108,53 @@ function formatPx(value: number) {
   return `${Math.round(value)} px`
 }
 
-function formatHeight(slice: SliceRange) {
-  return formatPx(slice.end - slice.start)
+function isSliceOversized(slice: SliceRange) {
+  const limit = maxSliceHeight.value
+  return limit > 0 && slice.end - slice.start > limit
+}
+
+function isSliceUndersized(slice: SliceRange) {
+  return slice.end - slice.start < PAGED_IMAGE_MIN_SLICE_HEIGHT
+}
+
+function isBoundaryHovered(index: number) {
+  return hoverBoundaryIndex.value === index && activeBoundaryIndex.value !== index
+}
+
+function getBoundaryButtonClass(index: number) {
+  if (activeBoundaryIndex.value === index) {
+    return `text-primary`
+  }
+
+  if (isBoundaryHovered(index)) {
+    return `text-primary/80`
+  }
+
+  return `text-sky-600 dark:text-sky-400`
+}
+
+function getBoundaryLineClass(index: number) {
+  if (activeBoundaryIndex.value === index) {
+    return `h-1 bg-primary shadow-sm`
+  }
+
+  if (isBoundaryHovered(index)) {
+    return `h-1 bg-primary/70`
+  }
+
+  return `h-0.5 bg-sky-500`
+}
+
+function getBoundaryLabelClass(index: number) {
+  if (activeBoundaryIndex.value === index) {
+    return `border-primary text-primary`
+  }
+
+  if (isBoundaryHovered(index)) {
+    return `border-primary/70 text-primary`
+  }
+
+  return `border-border`
 }
 
 function getContentY(event: Pick<MouseEvent | PointerEvent, 'clientY'>) {
@@ -102,8 +173,19 @@ function getContentY(event: Pick<MouseEvent | PointerEvent, 'clientY'>) {
   return Math.round((displayY / rect.height) * current.totalHeight)
 }
 
-function getDragGap(prev: number, next: number) {
-  return Math.min(PAGED_IMAGE_MIN_SLICE_HEIGHT, Math.max(1, Math.floor((next - prev) / 2)))
+function getContentPixelsPerDisplayPixel() {
+  const current = draft.value
+  const stack = previewStackRef.value
+  if (!current || !stack) {
+    return null
+  }
+
+  const rect = stack.getBoundingClientRect()
+  if (rect.height <= 0) {
+    return null
+  }
+
+  return current.totalHeight / rect.height
 }
 
 function moveBoundary(index: number, nextPosition: number) {
@@ -115,9 +197,8 @@ function moveBoundary(index: number, nextPosition: number) {
   const nextBoundaries = [...boundaries.value]
   const prev = index === 0 ? 0 : nextBoundaries[index - 1]
   const next = index === nextBoundaries.length - 1 ? current.totalHeight : nextBoundaries[index + 1]
-  const minGap = getDragGap(prev, next)
 
-  nextBoundaries[index] = Math.min(next - minGap, Math.max(prev + minGap, Math.round(nextPosition)))
+  nextBoundaries[index] = Math.min(next - 1, Math.max(prev + 1, Math.round(nextPosition)))
   boundaries.value = nextBoundaries
 }
 
@@ -128,33 +209,75 @@ function stopBoundaryDrag() {
 
   window.removeEventListener(`pointermove`, handleBoundaryDrag)
   window.removeEventListener(`pointerup`, stopBoundaryDrag)
+  window.removeEventListener(`pointercancel`, stopBoundaryDrag)
   draggingBoundaryIndex.value = null
+  suppressNextBoundaryClick = hasDraggedBoundary
+  window.setTimeout(() => {
+    suppressNextBoundaryClick = false
+  })
 }
 
 function handleBoundaryDrag(event: PointerEvent) {
   const index = draggingBoundaryIndex.value
-  const position = getContentY(event)
-  if (index === null || position === null) {
+  const scale = getContentPixelsPerDisplayPixel()
+  if (index === null || scale === null) {
     return
   }
 
-  moveBoundary(index, position)
+  const delta = Math.round((event.clientY - dragStartClientY) * scale)
+  if (delta !== 0) {
+    hasDraggedBoundary = true
+  }
+
+  moveBoundary(index, dragStartBoundaryPosition + delta)
 }
 
 function startBoundaryDrag(index: number, event: PointerEvent) {
-  event.preventDefault()
   event.stopPropagation()
   stopBoundaryDrag()
-  activeBoundaryIndex.value = index
+  dragStartClientY = event.clientY
+  dragStartBoundaryPosition = boundaries.value[index] ?? 0
+  hasDraggedBoundary = false
   draggingBoundaryIndex.value = index
+  if (event.currentTarget instanceof HTMLElement) {
+    event.currentTarget.setPointerCapture(event.pointerId)
+  }
   window.addEventListener(`pointermove`, handleBoundaryDrag)
   window.addEventListener(`pointerup`, stopBoundaryDrag)
+  window.addEventListener(`pointercancel`, stopBoundaryDrag)
+}
+
+function handleBoundaryHitAreaPointerMove(event: PointerEvent) {
+  clearHoverInsertPosition()
+  if (draggingBoundaryIndex.value !== null) {
+    handleBoundaryDrag(event)
+  }
+}
+
+function handleBoundaryPointerEnter(index: number) {
+  hoverBoundaryIndex.value = index
+  clearHoverInsertPosition()
+}
+
+function handleBoundaryPointerLeave(index: number) {
+  if (hoverBoundaryIndex.value === index) {
+    hoverBoundaryIndex.value = null
+  }
+}
+
+function selectBoundary(index: number) {
+  if (suppressNextBoundaryClick) {
+    suppressNextBoundaryClick = false
+    return
+  }
+
+  activeBoundaryIndex.value = index
 }
 
 function insertBoundaryAt(position: number) {
   const current = draft.value
   if (!current) {
-    return
+    return false
   }
 
   const nextBoundaries = [...boundaries.value]
@@ -163,22 +286,25 @@ function insertBoundaryAt(position: number) {
   const prev = index === 0 ? 0 : nextBoundaries[index - 1]
   const next = index === nextBoundaries.length ? current.totalHeight : nextBoundaries[index]
 
-  if (next - prev < PAGED_IMAGE_MIN_SLICE_HEIGHT * 2) {
-    toast.error(`当前位置空间不足，无法新增切分线`)
-    return
+  if (next - prev < 2) {
+    toast.error(`当前位置已经没有可新增切分线的空间`)
+    return false
   }
 
   const nextPosition = Math.min(
-    next - PAGED_IMAGE_MIN_SLICE_HEIGHT,
-    Math.max(prev + PAGED_IMAGE_MIN_SLICE_HEIGHT, Math.round(position)),
+    next - 1,
+    Math.max(prev + 1, Math.round(position)),
   )
 
   nextBoundaries.splice(index, 0, nextPosition)
   boundaries.value = nextBoundaries
-  activeBoundaryIndex.value = index
+  activeBoundaryIndex.value = null
+  return true
 }
 
 function addBoundaryFromPreview(event: MouseEvent) {
+  activeBoundaryIndex.value = null
+  hoverBoundaryIndex.value = null
   const position = getContentY(event)
   if (position === null) {
     return
@@ -187,16 +313,23 @@ function addBoundaryFromPreview(event: MouseEvent) {
   insertBoundaryAt(position)
 }
 
-function addBoundaryToLargestSlice() {
-  if (!draft.value || slices.value.length === 0) {
+function updateHoverInsertPosition(event: PointerEvent) {
+  hoverInsertPosition.value = getContentY(event)
+}
+
+function clearHoverInsertPosition() {
+  hoverInsertPosition.value = null
+}
+
+function removeBoundaryAt(index: number) {
+  const nextBoundaries = [...boundaries.value]
+  if (index < 0 || index >= nextBoundaries.length) {
     return
   }
 
-  const largest = slices.value.reduce((result, slice) => {
-    return slice.end - slice.start > result.end - result.start ? slice : result
-  }, slices.value[0])
-
-  insertBoundaryAt((largest.start + largest.end) / 2)
+  nextBoundaries.splice(index, 1)
+  boundaries.value = nextBoundaries
+  activeBoundaryIndex.value = null
 }
 
 function removeActiveBoundary() {
@@ -205,10 +338,37 @@ function removeActiveBoundary() {
     return
   }
 
-  const nextBoundaries = [...boundaries.value]
-  nextBoundaries.splice(index, 1)
-  boundaries.value = nextBoundaries
-  activeBoundaryIndex.value = nextBoundaries.length === 0 ? null : Math.min(index, nextBoundaries.length - 1)
+  removeBoundaryAt(index)
+}
+
+function nudgeActiveBoundary(delta: number) {
+  const index = activeBoundaryIndex.value
+  const boundary = selectedBoundary.value
+  if (index === null || boundary === null) {
+    return
+  }
+
+  moveBoundary(index, boundary + delta)
+}
+
+function handleBoundaryKeyboardShortcut(event: KeyboardEvent) {
+  if (!isShowPagedImageExportDialog.value || selectedBoundary.value === null) {
+    return
+  }
+
+  if (event.key === `Backspace` || event.key === `Delete`) {
+    event.preventDefault()
+    removeActiveBoundary()
+    return
+  }
+
+  if (event.key !== `ArrowUp` && event.key !== `ArrowDown`) {
+    return
+  }
+
+  event.preventDefault()
+  const step = event.shiftKey ? 10 : 1
+  nudgeActiveBoundary(event.key === `ArrowUp` ? -step : step)
 }
 
 function resetBoundaries() {
@@ -228,6 +388,8 @@ function cleanupDraft() {
   draft.value = null
   boundaries.value = []
   activeBoundaryIndex.value = null
+  hoverInsertPosition.value = null
+  hoverBoundaryIndex.value = null
   errorMessage.value = ``
 }
 
@@ -239,6 +401,8 @@ async function prepareDraft() {
   draft.value = null
   boundaries.value = []
   activeBoundaryIndex.value = null
+  hoverInsertPosition.value = null
+  hoverBoundaryIndex.value = null
 
   try {
     await nextTick()
@@ -292,14 +456,17 @@ function handleOpenChange(open: boolean) {
 watch(isShowPagedImageExportDialog, (open) => {
   if (open) {
     prepareDraft()
+    window.addEventListener(`keydown`, handleBoundaryKeyboardShortcut)
   }
   else {
     cleanupDraft()
+    window.removeEventListener(`keydown`, handleBoundaryKeyboardShortcut)
   }
 })
 
 onBeforeUnmount(() => {
   cleanupDraft()
+  window.removeEventListener(`keydown`, handleBoundaryKeyboardShortcut)
 })
 </script>
 
@@ -333,9 +500,11 @@ onBeforeUnmount(() => {
         <div class="min-h-0 flex-1 overflow-auto bg-muted/30 p-4">
           <div
             ref="previewStackRef"
-            class="relative mx-auto overflow-hidden border bg-background shadow-sm"
+            class="relative mx-auto cursor-crosshair overflow-hidden border bg-background shadow-sm"
             :style="{ width: `${draft.width}px`, maxWidth: '100%' }"
-            @dblclick="addBoundaryFromPreview"
+            @click="addBoundaryFromPreview"
+            @pointermove="updateHoverInsertPosition"
+            @pointerleave="clearHoverInsertPosition"
           >
             <img
               :src="draft.imageUrl"
@@ -353,31 +522,47 @@ onBeforeUnmount(() => {
               />
             </div>
 
+            <div
+              v-if="hoverInsertPosition !== null"
+              class="pointer-events-none absolute left-0 right-0 z-10 -translate-y-1/2 border-t border-dashed border-emerald-500"
+              :style="{ top: getPositionPercent(hoverInsertPosition) }"
+            >
+              <span class="absolute right-2 -translate-y-1/2 rounded border border-emerald-500/60 bg-background/95 px-2 py-0.5 text-xs text-emerald-600 shadow-sm dark:text-emerald-400">
+                点击新增 · {{ formatPx(hoverInsertPosition) }}
+              </span>
+            </div>
+
             <button
               v-for="(boundary, index) in boundaries"
               :key="`${index}-${boundary}`"
               type="button"
-              class="absolute left-0 z-10 h-6 w-full -translate-y-1/2 cursor-row-resize bg-transparent p-0 text-left focus:outline-none"
-              :class="activeBoundaryIndex === index ? 'text-primary' : 'text-sky-600 dark:text-sky-400'"
+              class="absolute left-0 z-20 h-12 w-full -translate-y-1/2 cursor-row-resize bg-transparent p-0 text-left focus:outline-none"
+              :class="getBoundaryButtonClass(index)"
               :style="{ top: getBoundaryPercent(boundary) }"
-              @click.stop="activeBoundaryIndex = index"
+              @click.stop="selectBoundary(index)"
               @dblclick.stop
+              @pointerenter="handleBoundaryPointerEnter(index)"
+              @pointerleave="handleBoundaryPointerLeave(index)"
+              @pointermove.stop="handleBoundaryHitAreaPointerMove"
               @pointerdown="startBoundaryDrag(index, $event)"
             >
               <span
-                class="absolute left-0 right-0 top-1/2 h-0.5 -translate-y-1/2"
-                :class="activeBoundaryIndex === index ? 'bg-primary' : 'bg-sky-500'"
+                class="absolute left-0 right-0 top-1/2 -translate-y-1/2"
+                :class="getBoundaryLineClass(index)"
               />
-              <span class="absolute right-2 top-1/2 -translate-y-1/2 rounded border bg-background/95 px-2 py-0.5 text-xs shadow-sm">
+              <span
+                class="absolute right-2 top-1/2 -translate-y-1/2 rounded border bg-background/95 px-2 py-0.5 text-xs shadow-sm"
+                :class="getBoundaryLabelClass(index)"
+              >
                 {{ index + 1 }} · {{ formatPx(boundary) }}
               </span>
             </button>
           </div>
         </div>
 
-        <aside class="flex min-h-0 w-full shrink-0 flex-col border-t bg-background md:w-80 md:border-l md:border-t-0">
-          <div class="space-y-3 border-b p-4">
-            <div class="grid grid-cols-3 gap-2 text-center text-xs">
+        <aside class="w-full shrink-0 border-t bg-background p-4 md:w-80 md:border-l md:border-t-0">
+          <div class="space-y-4">
+            <div class="grid grid-cols-2 gap-2 text-center text-xs">
               <div class="rounded border px-2 py-2">
                 <div class="font-medium text-foreground">
                   {{ pageCount }}
@@ -402,73 +587,64 @@ onBeforeUnmount(() => {
                   宽度
                 </div>
               </div>
+              <div class="rounded border px-2 py-2">
+                <div class="font-medium text-foreground">
+                  {{ formatPx(maxSliceHeight) }}
+                </div>
+                <div class="text-muted-foreground">
+                  建议最大高度
+                </div>
+              </div>
             </div>
 
-            <div class="flex gap-2">
-              <Button variant="outline" size="sm" class="flex-1" @click="addBoundaryToLargestSlice">
-                <Plus class="mr-1 size-4" />
-                新增
-              </Button>
+            <p class="text-xs leading-5 text-muted-foreground">
+              在左侧预览图上移动鼠标查看新增位置，单击即可新增切分线；已有切分线仍可拖动调整。
+            </p>
+
+            <div v-if="oversizedSliceCount > 0" class="rounded border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
+              {{ oversizedSliceCount }} 张图片超过建议最大高度，仍可继续导出。
+            </div>
+            <div v-if="undersizedSliceCount > 0" class="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
+              {{ undersizedSliceCount }} 张图片低于建议间隔，仍可继续导出。
+            </div>
+
+            <div class="space-y-2 rounded border p-3">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-medium text-muted-foreground">选中切分线</span>
+                <span class="text-muted-foreground">
+                  {{ selectedBoundary === null ? '未选择' : formatPx(selectedBoundary) }}
+                </span>
+              </div>
               <Button
                 variant="outline"
                 size="sm"
-                class="flex-1"
+                class="w-full"
                 :disabled="selectedBoundary === null"
                 @click="removeActiveBoundary"
               >
                 <Trash2 class="mr-1 size-4" />
-                删除
+                删除选中切分线
               </Button>
-              <Button variant="outline" size="sm" class="flex-1" @click="resetBoundaries">
-                <RotateCcw class="mr-1 size-4" />
-                重置
-              </Button>
+              <p class="text-xs leading-5 text-muted-foreground">
+                点击切分线选中后，可按方向键上/下微调 1 px，Shift + 方向键调整 10 px，Backspace 或 Delete 删除。
+              </p>
             </div>
 
-            <p class="text-xs leading-5 text-muted-foreground">
-              拖动切分线调整位置；双击预览区域可在当前位置新增切分线。
-            </p>
-          </div>
-
-          <div class="min-h-0 flex-1 overflow-y-auto p-3">
-            <div v-if="boundaries.length === 0" class="rounded border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-              当前只会导出为 1 张图片
-            </div>
-            <div v-else class="space-y-2">
-              <button
-                v-for="(boundary, index) in boundaries"
-                :key="`boundary-list-${index}-${boundary}`"
-                type="button"
-                class="w-full rounded border px-3 py-2 text-left text-sm transition-colors hover:bg-accent"
-                :class="activeBoundaryIndex === index ? 'border-primary bg-accent' : ''"
-                @click="activeBoundaryIndex = index"
-              >
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-medium">切分线 {{ index + 1 }}</span>
-                  <span class="text-xs text-muted-foreground">{{ formatPx(boundary) }}</span>
-                </div>
-                <div class="mt-1 text-xs text-muted-foreground">
-                  第 {{ index + 1 }} 张图片结束位置
-                </div>
-              </button>
-            </div>
-
-            <div class="mt-4 space-y-2">
-              <div
-                v-for="(slice, index) in slices"
-                :key="`slice-list-${index}-${slice.start}-${slice.end}`"
-                class="rounded bg-muted/50 px-3 py-2 text-xs text-muted-foreground"
-              >
-                第 {{ index + 1 }} 张：{{ formatPx(slice.start) }} - {{ formatPx(slice.end) }}，高度 {{ formatHeight(slice) }}
-              </div>
-            </div>
+            <Button variant="outline" size="sm" class="w-full" @click="resetBoundaries">
+              <RotateCcw class="mr-1 size-4" />
+              重置
+            </Button>
           </div>
         </aside>
       </div>
 
       <DialogFooter class="border-t px-5 py-3 sm:justify-between">
         <div class="text-xs text-muted-foreground">
-          <span v-if="draft">将导出 {{ pageCount }} 张 PNG 图片到 ZIP</span>
+          <span v-if="draft">
+            将导出 {{ pageCount }} 张 PNG 图片到 ZIP
+            <span v-if="oversizedSliceCount > 0">，{{ oversizedSliceCount }} 张超过建议最大高度</span>
+            <span v-if="undersizedSliceCount > 0">，{{ undersizedSliceCount }} 张低于建议间隔</span>
+          </span>
         </div>
         <div class="flex gap-2">
           <Button variant="outline" :disabled="isExporting" @click="handleOpenChange(false)">

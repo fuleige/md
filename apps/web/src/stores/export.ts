@@ -28,6 +28,7 @@ export interface PagedImageExportDraft {
   totalHeight: number
   width: number
   pageHeight: number
+  maxSliceHeight: number
   avoidRanges: AvoidRange[]
   algorithmSlices: SliceRange[]
   slices: SliceRange[]
@@ -39,6 +40,7 @@ interface PagedImageSnapshot {
   totalHeight: number
   width: number
   pageHeight: number
+  maxSliceHeight: number
   avoidRanges: AvoidRange[]
   slices: SliceRange[]
   safeTitle: string
@@ -48,10 +50,8 @@ const EXPORT_READY_DELAY = 100
 const MIN_PAGE_HEIGHT = 600
 const MAX_PAGE_HEIGHT = 1400
 export const PAGED_IMAGE_MIN_SLICE_HEIGHT = 120
-const MIN_SLICE_HEIGHT = PAGED_IMAGE_MIN_SLICE_HEIGHT
 const MIN_CONTENT_HEIGHT = 80
 const IMAGE_EXPORT_PIXEL_RATIO = 2
-const MAX_PAGE_OVERSHOOT_RATIO = 1.3
 const RANGE_PADDING = 2
 const BLOCK_AVOID_SELECTOR = [
   `h1`,
@@ -199,7 +199,7 @@ function collectAvoidRanges(root: HTMLElement, totalHeight: number): AvoidRange[
   return mergeRanges(ranges)
 }
 
-function calculatePageHeight(width: number) {
+function calculateMaxSliceHeight(width: number) {
   return Math.min(MAX_PAGE_HEIGHT, Math.max(MIN_PAGE_HEIGHT, Math.round(width * 16 / 9)))
 }
 
@@ -207,56 +207,59 @@ function findRangeAtPosition(ranges: AvoidRange[], position: number) {
   return ranges.find(range => range.start < position && range.end > position)
 }
 
-function resolveSliceEnd(start: number, totalHeight: number, pageHeight: number, avoidRanges: AvoidRange[]) {
-  let end = Math.min(start + pageHeight, totalHeight)
+function resolveSliceEnd(start: number, totalHeight: number, targetSliceHeight: number, avoidRanges: AvoidRange[]) {
+  const targetEnd = Math.min(start + targetSliceHeight, totalHeight)
 
-  if (end >= totalHeight) {
+  if (targetEnd >= totalHeight) {
     return totalHeight
   }
 
-  const maxComfortableEnd = Math.min(totalHeight, start + Math.round(pageHeight * MAX_PAGE_OVERSHOOT_RATIO))
-
-  for (let i = 0; i <= avoidRanges.length; i++) {
-    const blockingRange = findRangeAtPosition(avoidRanges, end)
-    if (!blockingRange) {
-      break
-    }
-
-    const safeHeightBeforeRange = blockingRange.start - start
-    const canKeepRangeInCurrentSlice = blockingRange.end <= maxComfortableEnd || safeHeightBeforeRange < MIN_SLICE_HEIGHT
-    end = canKeepRangeInCurrentSlice
-      ? Math.min(blockingRange.end, totalHeight)
-      : Math.max(blockingRange.start, start)
-
-    if (end >= totalHeight) {
-      return totalHeight
-    }
+  const blockingRange = findRangeAtPosition(avoidRanges, targetEnd)
+  if (!blockingRange) {
+    return targetEnd
   }
 
-  if (totalHeight - end < MIN_CONTENT_HEIGHT) {
-    return totalHeight
+  if (blockingRange.start > start) {
+    return blockingRange.start
   }
 
-  if (end <= start) {
-    const currentRange = avoidRanges.find(range => range.start <= start && range.end > start)
-    return currentRange ? Math.min(currentRange.end, totalHeight) : Math.min(start + pageHeight, totalHeight)
-  }
-
-  return end
+  return targetEnd
 }
 
-function createSliceRanges(totalHeight: number, pageHeight: number, avoidRanges: AvoidRange[]): SliceRange[] {
+function mergeTrailingSliceIfShort(slices: SliceRange[], maxSliceHeight: number) {
+  if (slices.length < 2) {
+    return slices
+  }
+
+  const last = slices[slices.length - 1]
+  const previous = slices[slices.length - 2]
+  const lastHeight = last.end - last.start
+  const mergedHeight = last.end - previous.start
+
+  if (lastHeight < MIN_CONTENT_HEIGHT && mergedHeight <= maxSliceHeight) {
+    previous.end = last.end
+    slices.pop()
+  }
+
+  return slices
+}
+
+function createSliceRanges(totalHeight: number, maxSliceHeight: number, avoidRanges: AvoidRange[]): SliceRange[] {
   const slices: SliceRange[] = []
   let start = 0
 
   while (start < totalHeight - 1) {
-    const end = resolveSliceEnd(start, totalHeight, pageHeight, avoidRanges)
+    let end = resolveSliceEnd(start, totalHeight, maxSliceHeight, avoidRanges)
+
+    if (end <= start) {
+      end = Math.min(start + maxSliceHeight, totalHeight)
+    }
 
     slices.push({ start, end })
     start = end
   }
 
-  return slices
+  return mergeTrailingSliceIfShort(slices, maxSliceHeight)
 }
 
 function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
@@ -333,9 +336,9 @@ async function createPagedImageSnapshot(title: string, isDark: boolean): Promise
 
     const updatedRect = el.getBoundingClientRect()
     const totalHeight = getMeasuredHeight(el)
-    const pageHeight = calculatePageHeight(updatedRect.width)
+    const maxSliceHeight = calculateMaxSliceHeight(updatedRect.width)
     const avoidRanges = collectAvoidRanges(el, totalHeight)
-    const slices = createSliceRanges(totalHeight, pageHeight, avoidRanges)
+    const slices = createSliceRanges(totalHeight, maxSliceHeight, avoidRanges)
 
     const canvas = await toCanvas(el, {
       backgroundColor: isDark ? `` : `#fff`,
@@ -349,7 +352,8 @@ async function createPagedImageSnapshot(title: string, isDark: boolean): Promise
       canvas,
       totalHeight,
       width: Math.ceil(updatedRect.width),
-      pageHeight,
+      pageHeight: maxSliceHeight,
+      maxSliceHeight,
       avoidRanges,
       slices,
       safeTitle: sanitizeTitle(title),
