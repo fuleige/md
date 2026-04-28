@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import type { PagedImageExportDraft, SliceRange } from '@/stores/export'
-import { Download, Loader2, RotateCcw, Trash2 } from 'lucide-vue-next'
+import type {
+  PagedImageExportDraft,
+  PagedImageExportProgress,
+  PagedImageExportQuality,
+  SliceRange,
+} from '@/stores/export'
+import { Download, Loader2, RotateCcw } from 'lucide-vue-next'
 import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { Button } from '@/components/ui/button'
@@ -12,7 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { PAGED_IMAGE_MIN_SLICE_HEIGHT, useExportStore } from '@/stores/export'
+import {
+  DEFAULT_PAGED_IMAGE_EXPORT_QUALITY,
+  PAGED_IMAGE_MIN_SLICE_HEIGHT,
+  PAGED_IMAGE_QUALITY_OPTIONS,
+  useExportStore,
+} from '@/stores/export'
 import { useUIStore } from '@/stores/ui'
 import { toast } from '@/utils/toast'
 
@@ -30,6 +40,8 @@ const errorMessage = ref(``)
 const previewStackRef = ref<HTMLElement | null>(null)
 const hoverInsertPosition = ref<number | null>(null)
 const hoverBoundaryIndex = ref<number | null>(null)
+const imageQuality = ref<PagedImageExportQuality>(DEFAULT_PAGED_IMAGE_EXPORT_QUALITY)
+const exportProgress = ref<PagedImageExportProgress | null>(null)
 
 let prepareRequestId = 0
 let dragStartClientY = 0
@@ -69,6 +81,25 @@ const oversizedSliceCount = computed(() => {
 })
 const undersizedSliceCount = computed(() => {
   return slices.value.filter(slice => isSliceUndersized(slice)).length
+})
+const exportProgressPercent = computed(() => exportProgress.value?.percent ?? 0)
+const exportProgressLabel = computed(() => {
+  const progress = exportProgress.value
+  if (!progress) {
+    return ``
+  }
+
+  if (progress.phase === `zipping`) {
+    return `正在打包 ZIP`
+  }
+
+  if (progress.phase === `done`) {
+    return `导出完成`
+  }
+
+  return progress.total > 0
+    ? `正在裁剪压缩 ${progress.current}/${progress.total}`
+    : `正在准备导出`
 })
 
 function slicesToBoundaries(sliceRanges: SliceRange[], totalHeight: number) {
@@ -155,6 +186,14 @@ function getBoundaryLabelClass(index: number) {
   }
 
   return `border-border`
+}
+
+function getQualityButtonVariant(quality: PagedImageExportQuality) {
+  return imageQuality.value === quality ? `default` : `outline`
+}
+
+function updateExportProgress(progress: PagedImageExportProgress) {
+  exportProgress.value = { ...progress }
 }
 
 function getContentY(event: Pick<MouseEvent | PointerEvent, 'clientY'>) {
@@ -390,6 +429,7 @@ function cleanupDraft() {
   activeBoundaryIndex.value = null
   hoverInsertPosition.value = null
   hoverBoundaryIndex.value = null
+  exportProgress.value = null
   errorMessage.value = ``
 }
 
@@ -403,6 +443,7 @@ async function prepareDraft() {
   activeBoundaryIndex.value = null
   hoverInsertPosition.value = null
   hoverBoundaryIndex.value = null
+  exportProgress.value = null
 
   try {
     await nextTick()
@@ -435,12 +476,24 @@ async function exportCurrentSlices() {
   }
 
   isExporting.value = true
+  exportProgress.value = {
+    phase: `rendering`,
+    current: 0,
+    total: pageCount.value,
+    percent: 0,
+  }
   try {
-    const count = await exportStore.downloadPagedImagesZipFromDraft(current, slices.value)
+    const count = await exportStore.downloadPagedImagesZipFromDraft(
+      current,
+      slices.value,
+      imageQuality.value,
+      updateExportProgress,
+    )
     toast.success(`已导出 ${count} 张分页图片。`)
     uiStore.isShowPagedImageExportDialog = false
   }
   catch (error) {
+    exportProgress.value = null
     const message = error instanceof Error ? error.message : String(error)
     toast.error(`分页图片导出失败：${message}`)
   }
@@ -455,6 +508,7 @@ function handleOpenChange(open: boolean) {
 
 watch(isShowPagedImageExportDialog, (open) => {
   if (open) {
+    imageQuality.value = DEFAULT_PAGED_IMAGE_EXPORT_QUALITY
     prepareDraft()
     window.addEventListener(`keydown`, handleBoundaryKeyboardShortcut)
   }
@@ -476,9 +530,9 @@ onBeforeUnmount(() => {
       class="!w-[min(1180px,95vw)] !max-w-[95vw] h-[88vh] max-h-[88vh] grid grid-rows-[auto_minmax(0,1fr)_auto] gap-0 overflow-hidden p-0"
     >
       <DialogHeader class="border-b px-5 py-4 pr-12">
-        <DialogTitle>自定义分页 PNG 导出</DialogTitle>
+        <DialogTitle>自定义分页图片导出</DialogTitle>
         <DialogDescription>
-          调整切分线后，导出的 ZIP 会按当前边界裁剪分页图片。
+          调整切分线和图片质量后，导出的 ZIP 会按当前设置裁剪分页图片。
         </DialogDescription>
       </DialogHeader>
 
@@ -579,58 +633,55 @@ onBeforeUnmount(() => {
                   总高度
                 </div>
               </div>
-              <div class="rounded border px-2 py-2">
-                <div class="font-medium text-foreground">
-                  {{ formatPx(draft.width) }}
-                </div>
-                <div class="text-muted-foreground">
-                  宽度
-                </div>
+            </div>
+
+            <div class="space-y-2">
+              <div class="text-xs font-medium text-muted-foreground">
+                导出质量
               </div>
-              <div class="rounded border px-2 py-2">
-                <div class="font-medium text-foreground">
-                  {{ formatPx(maxSliceHeight) }}
-                </div>
-                <div class="text-muted-foreground">
-                  建议最大高度
-                </div>
+              <div class="grid grid-cols-3 gap-2">
+                <Button
+                  v-for="option in PAGED_IMAGE_QUALITY_OPTIONS"
+                  :key="option.value"
+                  type="button"
+                  size="sm"
+                  :variant="getQualityButtonVariant(option.value)"
+                  :disabled="isExporting"
+                  @click="imageQuality = option.value"
+                >
+                  {{ option.label }}
+                </Button>
+              </div>
+              <p class="text-xs leading-5 text-muted-foreground">
+                默认高质量；降低质量可减少 ZIP 体积。
+              </p>
+            </div>
+
+            <div v-if="exportProgress" class="space-y-2 rounded border p-3">
+              <div class="flex items-center justify-between gap-2 text-xs">
+                <span class="font-medium text-muted-foreground">{{ exportProgressLabel }}</span>
+                <span class="text-muted-foreground">{{ exportProgressPercent }}%</span>
+              </div>
+              <div class="h-2 overflow-hidden rounded bg-muted">
+                <div
+                  class="h-full rounded bg-primary transition-[width] duration-200"
+                  :style="{ width: `${exportProgressPercent}%` }"
+                />
               </div>
             </div>
 
             <p class="text-xs leading-5 text-muted-foreground">
-              在左侧预览图上移动鼠标查看新增位置，单击即可新增切分线；已有切分线仍可拖动调整。
+              单击空白处新增切分线；点击切分线选中后，可拖动、方向键微调，或按 Backspace / Delete 删除。
             </p>
 
             <div v-if="oversizedSliceCount > 0" class="rounded border border-amber-500/60 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-              {{ oversizedSliceCount }} 张图片超过建议最大高度，仍可继续导出。
+              {{ oversizedSliceCount }} 张图片高度过高，仍可继续导出。
             </div>
             <div v-if="undersizedSliceCount > 0" class="rounded border border-red-500/60 bg-red-500/10 px-3 py-2 text-xs text-red-700 dark:text-red-300">
-              {{ undersizedSliceCount }} 张图片低于建议间隔，仍可继续导出。
+              {{ undersizedSliceCount }} 张图片间隔过低，仍可继续导出。
             </div>
 
-            <div class="space-y-2 rounded border p-3">
-              <div class="flex items-center justify-between gap-2 text-xs">
-                <span class="font-medium text-muted-foreground">选中切分线</span>
-                <span class="text-muted-foreground">
-                  {{ selectedBoundary === null ? '未选择' : formatPx(selectedBoundary) }}
-                </span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                class="w-full"
-                :disabled="selectedBoundary === null"
-                @click="removeActiveBoundary"
-              >
-                <Trash2 class="mr-1 size-4" />
-                删除选中切分线
-              </Button>
-              <p class="text-xs leading-5 text-muted-foreground">
-                点击切分线选中后，可按方向键上/下微调 1 px，Shift + 方向键调整 10 px，Backspace 或 Delete 删除。
-              </p>
-            </div>
-
-            <Button variant="outline" size="sm" class="w-full" @click="resetBoundaries">
+            <Button variant="outline" size="sm" class="w-full" :disabled="isExporting" @click="resetBoundaries">
               <RotateCcw class="mr-1 size-4" />
               重置
             </Button>
@@ -641,9 +692,9 @@ onBeforeUnmount(() => {
       <DialogFooter class="border-t px-5 py-3 sm:justify-between">
         <div class="text-xs text-muted-foreground">
           <span v-if="draft">
-            将导出 {{ pageCount }} 张 PNG 图片到 ZIP
-            <span v-if="oversizedSliceCount > 0">，{{ oversizedSliceCount }} 张超过建议最大高度</span>
-            <span v-if="undersizedSliceCount > 0">，{{ undersizedSliceCount }} 张低于建议间隔</span>
+            将导出 {{ pageCount }} 张图片到 ZIP
+            <span v-if="oversizedSliceCount > 0">，{{ oversizedSliceCount }} 张高度过高</span>
+            <span v-if="undersizedSliceCount > 0">，{{ undersizedSliceCount }} 张间隔过低</span>
           </span>
         </div>
         <div class="flex gap-2">

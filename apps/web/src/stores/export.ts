@@ -22,6 +22,18 @@ export interface SliceRange {
   end: number
 }
 
+export type PagedImageExportQuality = `low` | `medium` | `high`
+export type PagedImageExportProgressPhase = `rendering` | `zipping` | `done`
+
+export interface PagedImageExportProgress {
+  phase: PagedImageExportProgressPhase
+  current: number
+  total: number
+  percent: number
+}
+
+export type PagedImageExportProgressHandler = (progress: PagedImageExportProgress) => void
+
 export interface PagedImageExportDraft {
   canvas: HTMLCanvasElement
   imageUrl: string
@@ -51,8 +63,22 @@ const MIN_PAGE_HEIGHT = 600
 const MAX_PAGE_HEIGHT = 1400
 export const PAGED_IMAGE_MIN_SLICE_HEIGHT = 120
 const MIN_CONTENT_HEIGHT = 80
-const IMAGE_EXPORT_PIXEL_RATIO = 2
+export const PAGED_IMAGE_EXPORT_PIXEL_RATIO = 3
+const PAGED_IMAGE_EXPORT_MIME_TYPE = `image/jpeg`
+const CANVAS_DIMENSION_LIMIT = 16384
 const RANGE_PADDING = 2
+const DEFAULT_PAGED_IMAGE_FILE_TITLE = `文章图片集`
+export const DEFAULT_PAGED_IMAGE_EXPORT_QUALITY: PagedImageExportQuality = `high`
+export const PAGED_IMAGE_QUALITY_OPTIONS: Array<{ value: PagedImageExportQuality, label: string }> = [
+  { value: `low`, label: `低` },
+  { value: `medium`, label: `中` },
+  { value: `high`, label: `高` },
+]
+const PAGED_IMAGE_QUALITY_VALUES: Record<PagedImageExportQuality, number> = {
+  low: 0.68,
+  medium: 0.82,
+  high: 0.95,
+}
 const BLOCK_AVOID_SELECTOR = [
   `h1`,
   `h2`,
@@ -262,44 +288,74 @@ function createSliceRanges(totalHeight: number, maxSliceHeight: number, avoidRan
   return mergeTrailingSliceIfShort(slices, maxSliceHeight)
 }
 
-function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+interface CanvasBlobOptions {
+  type?: string
+  quality?: number
+}
+
+interface CanvasBlobResult {
+  blob: Blob
+  extension: string
+}
+
+function getMimeTypeExtension(mimeType: string) {
+  switch (mimeType) {
+    case `image/jpeg`:
+      return `jpg`
+    case `image/png`:
+    default:
+      return `png`
+  }
+}
+
+function getPagedImageBlobOptions(quality: PagedImageExportQuality): CanvasBlobOptions {
+  return {
+    type: PAGED_IMAGE_EXPORT_MIME_TYPE,
+    quality: PAGED_IMAGE_QUALITY_VALUES[quality],
+  }
+}
+
+function getPagedImageBackgroundColor(isDark: boolean) {
+  return isDark ? `#0f172a` : `#fff`
+}
+
+function getPagedImageTitle(root: HTMLElement) {
+  const contentRoot = root.querySelector<HTMLElement>(`#output`) ?? root
+  const heading = contentRoot.querySelector<HTMLElement>(`h1`)
+    ?? contentRoot.querySelector<HTMLElement>(`h2, h3, h4, h5, h6`)
+
+  return heading?.textContent?.trim() || DEFAULT_PAGED_IMAGE_FILE_TITLE
+}
+
+function sanitizePagedImageFileTitle(title: string) {
+  const MAX_FILENAME_LENGTH = 80
+  const safe = title
+    .normalize(`NFKC`)
+    .replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}\uFE0F\u200D]/gu, ``)
+    .replace(/[\\/:*?"<>|]/g, ` `)
+    .replace(/\p{Cc}/gu, ` `)
+    .replace(/[^\p{L}\p{N}\s_-]+/gu, ` `)
+    .replace(/\s+/g, ` `)
+    .trim()
+
+  const clipped = Array.from(safe).slice(0, MAX_FILENAME_LENGTH).join(``).trim()
+  return sanitizeTitle(clipped || DEFAULT_PAGED_IMAGE_FILE_TITLE)
+}
+
+function canvasToBlob(canvas: HTMLCanvasElement, options: CanvasBlobOptions = {}): Promise<CanvasBlobResult> {
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (blob) {
-        resolve(blob)
+        resolve({
+          blob,
+          extension: getMimeTypeExtension(blob.type || options.type || `image/png`),
+        })
       }
       else {
         reject(new Error(`图片生成失败。`))
       }
-    }, `image/png`)
+    }, options.type ?? `image/png`, options.quality)
   })
-}
-
-async function cropCanvasToBlob(canvas: HTMLCanvasElement, slice: SliceRange, scaleY: number) {
-  const sourceY = Math.round(slice.start * scaleY)
-  const sourceHeight = Math.max(1, Math.round((slice.end - slice.start) * scaleY))
-  const pageCanvas = document.createElement(`canvas`)
-  pageCanvas.width = canvas.width
-  pageCanvas.height = Math.max(1, Math.min(sourceHeight, canvas.height - sourceY))
-
-  const ctx = pageCanvas.getContext(`2d`)
-  if (!ctx) {
-    throw new Error(`当前浏览器不支持 Canvas 导出。`)
-  }
-
-  ctx.drawImage(
-    canvas,
-    0,
-    sourceY,
-    canvas.width,
-    pageCanvas.height,
-    0,
-    0,
-    canvas.width,
-    pageCanvas.height,
-  )
-
-  return await canvasToBlob(pageCanvas)
 }
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -317,7 +373,81 @@ function cloneSlices(slices: SliceRange[]) {
   return slices.map(slice => ({ ...slice }))
 }
 
-async function createPagedImageSnapshot(title: string, isDark: boolean): Promise<PagedImageSnapshot> {
+function createSliceRenderHost(
+  source: HTMLElement,
+  slice: SliceRange,
+  width: number,
+  totalHeight: number,
+  backgroundColor: string,
+) {
+  const sliceHeight = Math.max(1, Math.round(slice.end - slice.start))
+  const host = document.createElement(`div`)
+  host.style.position = `absolute`
+  host.style.left = `0`
+  host.style.top = `0`
+  host.style.width = `${width}px`
+  host.style.height = `${sliceHeight}px`
+  host.style.overflow = `hidden`
+  host.style.background = backgroundColor
+  host.style.pointerEvents = `none`
+  host.style.zIndex = `-1`
+
+  const content = source.cloneNode(true) as HTMLElement
+  content.style.position = `relative`
+  content.style.top = `-${Math.round(slice.start)}px`
+  content.style.width = `${width}px`
+  content.style.minHeight = `${Math.max(totalHeight, sliceHeight)}px`
+  content.style.margin = `0`
+  content.style.background = backgroundColor
+
+  host.appendChild(content)
+  document.body.appendChild(host)
+  return host
+}
+
+function assertSliceExportSize(width: number, sliceHeight: number, index: number) {
+  const canvasWidth = Math.ceil(width * PAGED_IMAGE_EXPORT_PIXEL_RATIO)
+  const canvasHeight = Math.ceil(sliceHeight * PAGED_IMAGE_EXPORT_PIXEL_RATIO)
+  if (canvasWidth > CANVAS_DIMENSION_LIMIT || canvasHeight > CANVAS_DIMENSION_LIMIT) {
+    throw new Error(`第 ${index + 1} 张图片尺寸过大，浏览器无法按 3 倍导出 JPEG，请增加切分线后重试。`)
+  }
+}
+
+async function renderSliceToBlob(
+  source: HTMLElement,
+  slice: SliceRange,
+  totalHeight: number,
+  width: number,
+  backgroundColor: string,
+  blobOptions: CanvasBlobOptions,
+  index: number,
+) {
+  const sliceHeight = Math.max(1, Math.round(slice.end - slice.start))
+  assertSliceExportSize(width, sliceHeight, index)
+
+  const host = createSliceRenderHost(source, slice, width, totalHeight, backgroundColor)
+  try {
+    const canvas = await toCanvas(host, {
+      backgroundColor,
+      filter: shouldExportNode,
+      skipFonts: true,
+      pixelRatio: PAGED_IMAGE_EXPORT_PIXEL_RATIO,
+      width,
+      height: sliceHeight,
+      canvasWidth: width,
+      canvasHeight: sliceHeight,
+      skipAutoScale: true,
+      style: { margin: `0` },
+    })
+
+    return await canvasToBlob(canvas, blobOptions)
+  }
+  finally {
+    host.remove()
+  }
+}
+
+async function createPagedImageSnapshot(isDark: boolean): Promise<PagedImageSnapshot> {
   const el = getPreviewElement()
   if (!el) {
     throw new Error(`未找到预览区域，请刷新页面后重试。`)
@@ -341,10 +471,10 @@ async function createPagedImageSnapshot(title: string, isDark: boolean): Promise
     const slices = createSliceRanges(totalHeight, maxSliceHeight, avoidRanges)
 
     const canvas = await toCanvas(el, {
-      backgroundColor: isDark ? `` : `#fff`,
+      backgroundColor: getPagedImageBackgroundColor(isDark),
       filter: shouldExportNode,
       skipFonts: true,
-      pixelRatio: Math.max(window.devicePixelRatio || 1, IMAGE_EXPORT_PIXEL_RATIO),
+      pixelRatio: PAGED_IMAGE_EXPORT_PIXEL_RATIO,
       style: { margin: `0` },
     })
 
@@ -356,7 +486,7 @@ async function createPagedImageSnapshot(title: string, isDark: boolean): Promise
       maxSliceHeight,
       avoidRanges,
       slices,
-      safeTitle: sanitizeTitle(title),
+      safeTitle: sanitizePagedImageFileTitle(getPagedImageTitle(el)),
     }
   }
   finally {
@@ -365,30 +495,92 @@ async function createPagedImageSnapshot(title: string, isDark: boolean): Promise
 }
 
 async function downloadPagedImageSlicesZip(
-  canvas: HTMLCanvasElement,
   totalHeight: number,
+  width: number,
   slices: SliceRange[],
   safeTitle: string,
+  isDark: boolean,
+  quality: PagedImageExportQuality = DEFAULT_PAGED_IMAGE_EXPORT_QUALITY,
+  onProgress?: PagedImageExportProgressHandler,
 ) {
   const exportSlices = slices.filter(slice => slice.end > slice.start)
   if (exportSlices.length === 0) {
     throw new Error(`没有可导出的分页图片。`)
   }
 
-  const scaleY = canvas.height / totalHeight
-  const { default: JSZip } = await import(`jszip`)
-  const zip = new JSZip()
-  const fileNameLength = Math.max(2, String(exportSlices.length).length)
-
-  for (let i = 0; i < exportSlices.length; i++) {
-    const blob = await cropCanvasToBlob(canvas, exportSlices[i], scaleY)
-    const index = String(i + 1).padStart(fileNameLength, `0`)
-    zip.file(`${safeTitle}-${index}.png`, blob)
+  const source = getPreviewElement()
+  if (!source) {
+    throw new Error(`未找到预览区域，请刷新页面后重试。`)
   }
 
-  const zipBlob = await zip.generateAsync({ type: `blob` })
-  downloadBlob(zipBlob, `${safeTitle}-images.zip`)
-  return exportSlices.length
+  const backgroundColor = getPagedImageBackgroundColor(isDark)
+  const style = createCodeBlockExportStyle()
+  document.head.appendChild(style)
+
+  try {
+    await waitForExportReady(source)
+
+    const { default: JSZip } = await import(`jszip`)
+    const zip = new JSZip()
+    const fileNameLength = Math.max(2, String(exportSlices.length).length)
+    const blobOptions = getPagedImageBlobOptions(quality)
+
+    onProgress?.({
+      phase: `rendering`,
+      current: 0,
+      total: exportSlices.length,
+      percent: 0,
+    })
+
+    for (let i = 0; i < exportSlices.length; i++) {
+      const { blob, extension } = await renderSliceToBlob(
+        source,
+        exportSlices[i],
+        totalHeight,
+        width,
+        backgroundColor,
+        blobOptions,
+        i,
+      )
+      const index = String(i + 1).padStart(fileNameLength, `0`)
+      zip.file(`${safeTitle}-${index}.${extension}`, blob)
+      onProgress?.({
+        phase: `rendering`,
+        current: i + 1,
+        total: exportSlices.length,
+        percent: Math.round(((i + 1) / exportSlices.length) * 90),
+      })
+    }
+
+    onProgress?.({
+      phase: `zipping`,
+      current: exportSlices.length,
+      total: exportSlices.length,
+      percent: 90,
+    })
+
+    const zipBlob = await zip.generateAsync({ type: `blob` }, (metadata) => {
+      onProgress?.({
+        phase: `zipping`,
+        current: exportSlices.length,
+        total: exportSlices.length,
+        percent: Math.min(99, 90 + Math.round(metadata.percent / 10)),
+      })
+    })
+
+    onProgress?.({
+      phase: `done`,
+      current: exportSlices.length,
+      total: exportSlices.length,
+      percent: 100,
+    })
+
+    downloadBlob(zipBlob, `${safeTitle}-images.zip`)
+    return exportSlices.length
+  }
+  finally {
+    style.remove()
+  }
 }
 
 /**
@@ -455,19 +647,20 @@ export const useExportStore = defineStore(`export`, () => {
     }
   }
 
-  // 分页导出渲染内容为多张 PNG，并打包为 ZIP
+  // 分页导出渲染内容为多张图片，并打包为 ZIP
   const downloadAsPagedImagesZip = async () => {
     const currentPost = postStore.currentPost
     if (!currentPost) {
       throw new Error(`没有可导出的文章。`)
     }
 
-    const snapshot = await createPagedImageSnapshot(currentPost.title, uiStore.isDark)
+    const snapshot = await createPagedImageSnapshot(uiStore.isDark)
     return await downloadPagedImageSlicesZip(
-      snapshot.canvas,
       snapshot.totalHeight,
+      snapshot.width,
       snapshot.slices,
       snapshot.safeTitle,
+      uiStore.isDark,
     )
   }
 
@@ -477,8 +670,8 @@ export const useExportStore = defineStore(`export`, () => {
       throw new Error(`没有可导出的文章。`)
     }
 
-    const snapshot = await createPagedImageSnapshot(currentPost.title, uiStore.isDark)
-    const imageBlob = await canvasToBlob(snapshot.canvas)
+    const snapshot = await createPagedImageSnapshot(uiStore.isDark)
+    const { blob: imageBlob } = await canvasToBlob(snapshot.canvas)
 
     return {
       ...snapshot,
@@ -488,12 +681,20 @@ export const useExportStore = defineStore(`export`, () => {
     }
   }
 
-  const downloadPagedImagesZipFromDraft = async (draft: PagedImageExportDraft, slices: SliceRange[]) => {
+  const downloadPagedImagesZipFromDraft = async (
+    draft: PagedImageExportDraft,
+    slices: SliceRange[],
+    quality: PagedImageExportQuality = DEFAULT_PAGED_IMAGE_EXPORT_QUALITY,
+    onProgress?: PagedImageExportProgressHandler,
+  ) => {
     return await downloadPagedImageSlicesZip(
-      draft.canvas,
       draft.totalHeight,
+      draft.width,
       slices,
       draft.safeTitle,
+      uiStore.isDark,
+      quality,
+      onProgress,
     )
   }
 

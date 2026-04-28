@@ -126,11 +126,11 @@ function exportEditorContent2PDF() {
           </MenubarItem>
           <MenubarItem @click="downloadAsPagedImagesZip()">
             <Download class="mr-2 size-4" />
-            分页 PNG 图片（ZIP）
+            分页图片（ZIP）
           </MenubarItem>
           <MenubarItem @click="openPagedImageExportDialog()">
             <Download class="mr-2 size-4" />
-            自定义分页 PNG 图片（ZIP）
+            自定义分页图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>
@@ -218,11 +218,11 @@ function exportEditorContent2PDF() {
           </MenubarItem>
           <MenubarItem @click="downloadAsPagedImagesZip()">
             <Download class="mr-2 size-4" />
-            分页 PNG 图片（ZIP）
+            分页图片（ZIP）
           </MenubarItem>
           <MenubarItem @click="openPagedImageExportDialog()">
             <Download class="mr-2 size-4" />
-            自定义分页 PNG 图片（ZIP）
+            自定义分页图片（ZIP）
           </MenubarItem>
         </MenubarSubContent>
       </MenubarSub>
