@@ -74,6 +74,45 @@ export function generateCodeBlockCompatibilityStyles(): string {
 }
 
 /**
+ * 固定扩展组件样式。
+ * 这些控件不进入组合式主题槽位，避免用户组合时破坏交互或第三方 SVG 渲染。
+ */
+export function generateLockedComponentStyles(): string {
+  return `
+#output .mermaid-diagram,
+#output .plantuml-diagram,
+#output .infographic-diagram {
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.2em 8px;
+  text-align: center;
+}
+
+#output .mermaid-diagram svg,
+#output .plantuml-diagram svg,
+#output .infographic-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+#output .markdown-toc {
+  margin: 1.2em 8px;
+}
+
+#output .table-wrapper {
+  max-width: 100%;
+  margin: 1.2em 8px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#output .table-wrapper table {
+  margin: 0;
+}
+  `.trim()
+}
+
+/**
  * 生成标题样式 CSS
  */
 function generateHeadingStylesCSS(headingStyles?: HeadingStyles): string {

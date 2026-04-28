@@ -69,6 +69,8 @@ function getAllStoreStates() {
 
     // Theme store 的状态
     theme: themeStore.theme,
+    themeComposition: themeStore.themeComposition,
+    isThemeCompositionCustom: themeStore.isThemeCompositionCustom,
     fontFamily: themeStore.fontFamily,
     fontSize: themeStore.fontSize,
     primaryColor: themeStore.primaryColor,
@@ -267,7 +269,11 @@ function applyImportedConfig() {
 
       // Theme store 的状态
       else if (key === `theme`)
-        themeStore.theme = value
+        themeStore.setTheme(value)
+      else if (key === `themeComposition`)
+        themeStore.themeComposition = value
+      else if (key === `isThemeCompositionCustom`)
+        themeStore.isThemeCompositionCustom = value
       else if (key === `fontFamily`)
         themeStore.fontFamily = value
       else if (key === `fontSize`)

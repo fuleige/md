@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ThemeName } from '@md/shared'
 import { exportMergedTheme } from '@md/core'
-import { themeMap, themeOptions, themeOptionsMap } from '@md/shared'
+import { baseCSSContent, generateThemeCompositionCSS, themeMap, themeOptions, themeOptionsMap } from '@md/shared'
 import { Check, CheckSquare, Download, Edit3, Ellipsis, Eye, Plus, X } from 'lucide-vue-next'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
@@ -327,10 +327,7 @@ function exportCurrentTheme() {
 
   const currentThemeName = currentTab.title || currentTab.name
 
-  // 使用新的导出函数（包含 default 基础）
-  const baseTheme = themeStore.theme === `default`
-    ? themeMap.default
-    : `${themeMap.default}\n\n${themeMap[themeStore.theme]}`
+  const baseTheme = `${baseCSSContent}\n\n${generateThemeCompositionCSS(themeStore.themeComposition)}`
 
   exportMergedTheme(
     currentTab.content,
@@ -339,6 +336,8 @@ function exportCurrentTheme() {
       primaryColor: themeStore.primaryColor,
       fontFamily: themeStore.fontFamily,
       fontSize: themeStore.fontSize,
+      isUseIndent: themeStore.isUseIndent,
+      isUseJustify: themeStore.isUseJustify,
     },
     currentThemeName,
   )

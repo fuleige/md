@@ -14,6 +14,8 @@ export const storeLabels: Record<string, string> = {
   isOpenPostSlider: `开启右侧发布滑块`,
   showAIToolbox: `AI 工具箱状态`,
   theme: `主题`,
+  themeComposition: `主题组合`,
+  isThemeCompositionCustom: `主题组合自定义状态`,
   fontFamily: `字体`,
   fontSize: `字体大小`,
   primaryColor: `自定义主题色`,

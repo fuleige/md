@@ -1,9 +1,19 @@
-import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeName } from '@md/shared/configs'
+import type { HeadingLevel, HeadingStyles, HeadingStyleType, ThemeComposition, ThemeName, ThemeSlot } from '@md/shared/configs'
 import { applyTheme } from '@md/core'
-import { defaultStyleConfig, themeCodeBlockThemeMap, themePrimaryColorMap, widthOptions } from '@md/shared/configs'
+import {
+  defaultStyleConfig,
+  getThemeComposition,
+  normalizeThemeComposition,
+  stylePresetMap,
+  themeCodeBlockThemeMap,
+  themePrimaryColorMap,
+  widthOptions,
+} from '@md/shared/configs'
 import { useCssEditorStore } from '@/stores/cssEditor'
 import { addPrefix } from '@/utils'
 import { store } from '@/utils/storage'
+
+type CustomizableHeadingLevel = Extract<HeadingLevel, ThemeSlot>
 
 /**
  * 主题和样式配置 Store
@@ -64,6 +74,76 @@ export const useThemeStore = defineStore(`theme`, () => {
   // 标题样式
   const headingStyles = store.reactive<HeadingStyles>(`headingStyles`, defaultStyleConfig.headingStyles)
 
+  // 组合式主题配置：主题本身是一组组件样式 preset 的组合。
+  const themeComposition = store.reactive<ThemeComposition>(
+    addPrefix(`theme_composition`),
+    defaultStyleConfig.themeComposition,
+  )
+
+  const isThemeCompositionCustom = store.reactive(addPrefix(`theme_composition_custom`), false)
+
+  const isCustomizableHeadingLevel = (level: HeadingLevel): level is CustomizableHeadingLevel => {
+    return level === `h1` || level === `h2` || level === `h3`
+  }
+
+  const legacyHeadingPresetMap: Record<HeadingLevel, Partial<Record<HeadingStyleType, string>>> = {
+    h1: {
+      'color-only': `h1-paper`,
+      'border-bottom': `h1-editorial-rule`,
+      'border-left': `h1-left-rail`,
+    },
+    h2: {
+      'color-only': `h2-underline`,
+      'border-bottom': `h2-paper`,
+      'border-left': `h2-left-panel`,
+    },
+    h3: {
+      'color-only': `h3-bottom-line`,
+      'border-bottom': `h3-bottom-line`,
+      'border-left': `h3-left-rail`,
+    },
+    h4: {},
+    h5: {},
+    h6: {},
+  }
+
+  const normalizeCurrentThemeComposition = () => {
+    themeComposition.value = normalizeThemeComposition(themeComposition.value)
+  }
+
+  const migrateLegacyHeadingStyles = () => {
+    const entries = Object.entries(headingStyles.value) as [HeadingLevel, HeadingStyleType][]
+    const meaningfulEntries = entries.filter(([, style]) => style && style !== `default` && style !== `custom`)
+
+    if (!meaningfulEntries.length) {
+      normalizeCurrentThemeComposition()
+      return
+    }
+
+    const next = normalizeThemeComposition(themeComposition.value)
+    let changed = false
+
+    for (const [level, style] of meaningfulEntries) {
+      const presetId = legacyHeadingPresetMap[level]?.[style]
+      if (isCustomizableHeadingLevel(level) && presetId && stylePresetMap[presetId]?.slot === level) {
+        next.slots[level] = presetId
+        changed = true
+      }
+    }
+
+    if (changed) {
+      themeComposition.value = next
+      isThemeCompositionCustom.value = true
+    }
+    else {
+      normalizeCurrentThemeComposition()
+    }
+
+    headingStyles.value = {}
+  }
+
+  migrateLegacyHeadingStyles()
+
   // 计算属性
   const fontSizeNumber = computed(() => Number(fontSize.value.replace(`px`, ``)))
 
@@ -95,13 +175,42 @@ export const useThemeStore = defineStore(`theme`, () => {
     isCodeBlockThemeCustom.value = false
     legend.value = defaultStyleConfig.legend
     headingStyles.value = { ...defaultStyleConfig.headingStyles }
+    themeComposition.value = getThemeComposition(defaultStyleConfig.theme)
+    isThemeCompositionCustom.value = false
 
     isUseIndent.value = false
     isUseJustify.value = false
   }
 
+  const setThemeSlot = (slot: ThemeSlot, presetId: string) => {
+    const preset = stylePresetMap[presetId]
+    if (!preset || preset.slot !== slot) {
+      return
+    }
+
+    themeComposition.value = normalizeThemeComposition({
+      ...themeComposition.value,
+      slots: {
+        ...themeComposition.value.slots,
+        [slot]: presetId,
+      },
+    })
+    headingStyles.value = {}
+    isThemeCompositionCustom.value = true
+  }
+
   // 设置标题样式
   const setHeadingStyle = (level: HeadingLevel, style: HeadingStyleType) => {
+    const presetId = isCustomizableHeadingLevel(level)
+      ? style === `default`
+        ? getThemeComposition(theme.value).slots[level]
+        : legacyHeadingPresetMap[level]?.[style]
+      : undefined
+
+    if (presetId && isCustomizableHeadingLevel(level)) {
+      setThemeSlot(level, presetId)
+    }
+
     headingStyles.value = {
       ...headingStyles.value,
       [level]: style === `default` ? undefined : style,
@@ -110,11 +219,37 @@ export const useThemeStore = defineStore(`theme`, () => {
 
   // 获取标题样式
   const getHeadingStyle = (level: HeadingLevel): HeadingStyleType => {
-    return headingStyles.value[level] || `default`
+    if (!isCustomizableHeadingLevel(level)) {
+      return headingStyles.value[level] || `default`
+    }
+
+    const currentPreset = themeComposition.value.slots[level]
+    const currentThemeDefault = getThemeComposition(theme.value).slots[level]
+
+    if (currentPreset === currentThemeDefault)
+      return `default`
+
+    const matched = Object.entries(legacyHeadingPresetMap[level]).find(([, presetId]) => presetId === currentPreset)
+    return matched?.[0] as HeadingStyleType | undefined || `custom`
+  }
+
+  const getThemeSlot = (slot: ThemeSlot) => {
+    return normalizeThemeComposition(themeComposition.value).slots[slot]
+  }
+
+  const useThemeComposition = (newTheme: ThemeName = theme.value) => {
+    themeComposition.value = getThemeComposition(newTheme)
+    headingStyles.value = {}
+    isThemeCompositionCustom.value = false
+  }
+
+  const resetThemeComposition = () => {
+    useThemeComposition(theme.value)
   }
 
   const setTheme = (newTheme: ThemeName) => {
     theme.value = newTheme
+    useThemeComposition(newTheme)
     if (!isPrimaryColorCustom.value) {
       primaryColor.value = themePrimaryColorMap[newTheme]
     }
@@ -172,6 +307,7 @@ export const useThemeStore = defineStore(`theme`, () => {
 
       await applyTheme({
         themeName: theme.value,
+        themeComposition: normalizeThemeComposition(themeComposition.value),
         customCSS,
         variables: {
           primaryColor: primaryColor.value,
@@ -179,7 +315,6 @@ export const useThemeStore = defineStore(`theme`, () => {
           fontSize: fontSize.value,
           isUseIndent: isUseIndent.value,
           isUseJustify: isUseJustify.value,
-          headingStyles: headingStyles.value,
         },
       })
     }
@@ -209,6 +344,8 @@ export const useThemeStore = defineStore(`theme`, () => {
     isUseJustify,
     previewWidth,
     headingStyles,
+    themeComposition,
+    isThemeCompositionCustom,
 
     // Actions
     toggleMacCodeBlock,
@@ -229,5 +366,9 @@ export const useThemeStore = defineStore(`theme`, () => {
     applyCurrentTheme,
     setHeadingStyle,
     getHeadingStyle,
+    setThemeSlot,
+    getThemeSlot,
+    useThemeComposition,
+    resetThemeComposition,
   }
 })

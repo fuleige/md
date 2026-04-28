@@ -1,6 +1,7 @@
 import type { IConfigOption } from '../types'
 import type { ThemeName } from './theme-css'
 import { themeOptions } from './theme'
+import { defaultThemeComposition } from './theme-presets'
 
 export const fontFamilyOptions: IConfigOption[] = [
   {
@@ -333,4 +334,5 @@ export const defaultStyleConfig = {
   codeBlockTheme: codeBlockThemeOptions[23].value,
   legend: legendOptions[3].value,
   headingStyles: defaultHeadingStyles as HeadingStyles,
+  themeComposition: defaultThemeComposition,
 }

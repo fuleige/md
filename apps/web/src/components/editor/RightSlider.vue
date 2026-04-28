@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type {
-  HeadingLevel,
-  HeadingStyleType,
   ThemeName,
+  ThemeSlot,
 } from '@md/shared/configs'
 import type { Format } from 'vue-pick-colors'
 import {
@@ -10,22 +9,20 @@ import {
   colorOptions,
   fontFamilyOptions,
   fontSizeOptions,
-  headingLevelOptions,
-  headingStyleOptions,
   legendOptions,
   themeCodeBlockThemeMap,
   themeOptions,
   themePrimaryColorMap,
+  themeSlotOptions,
+  visibleStylePresetsBySlot,
 } from '@md/shared/configs'
 import { X } from 'lucide-vue-next'
 import PickColors from 'vue-pick-colors'
-import { useCssEditorStore } from '@/stores/cssEditor'
 import { useEditorStore } from '@/stores/editor'
 import { useRenderStore } from '@/stores/render'
 import { useThemeStore } from '@/stores/theme'
 import { useUIStore } from '@/stores/ui'
 
-const cssEditorStore = useCssEditorStore()
 const uiStore = useUIStore()
 const themeStore = useThemeStore()
 const {
@@ -44,29 +41,12 @@ const {
   isCiteStatus,
   isUseIndent,
   isUseJustify,
+  isThemeCompositionCustom,
 } = storeToRefs(themeStore)
 
-// 标题样式选择器状态
-const selectedHeadingLevel = ref<HeadingLevel>(`h2`)
-const selectedHeadingStyle = computed({
-  get: () => themeStore.getHeadingStyle(selectedHeadingLevel.value),
-  set: (val: HeadingStyleType) => {
-    themeStore.setHeadingStyle(selectedHeadingLevel.value, val)
-    if (val === `custom`) {
-      // 打开 CSS 编辑器并滚动到对应标题区域
-      uiStore.isShowCssEditor = true
-      // 等待 CSS 编辑器打开后再滚动
-      nextTick(() => {
-        setTimeout(() => {
-          cssEditorStore.scrollToHeading(selectedHeadingLevel.value)
-        }, 100)
-      })
-    }
-    // 无论选择预设还是自定义，都立即应用主题，确保标题样式及时恢复/更新
-    themeStore.applyCurrentTheme()
-    editorRefresh()
-  },
-})
+const selectedThemeSlot = ref<ThemeSlot>(`h1`)
+const currentSlotPresets = computed(() => visibleStylePresetsBySlot[selectedThemeSlot.value])
+const currentSlotPreset = computed(() => themeStore.getThemeSlot(selectedThemeSlot.value))
 
 const { isMobile, isOpenRightSlider, isDark } = storeToRefs(uiStore)
 
@@ -85,6 +65,18 @@ function editorRefresh() {
 function themeChanged(newTheme: ThemeName) {
   themeStore.setTheme(newTheme)
   // 使用新主题系统
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
+
+function themeSlotChanged(presetId: string) {
+  themeStore.setThemeSlot(selectedThemeSlot.value, presetId)
+  themeStore.applyCurrentTheme()
+  editorRefresh()
+}
+
+function resetThemeComposition() {
+  themeStore.resetThemeComposition()
   themeStore.applyCurrentTheme()
   editorRefresh()
 }
@@ -317,28 +309,47 @@ const formatOptions = ref<Format[]>([`rgb`, `hex`, `hsl`, `hsv`])
         </div>
       </div>
       <div class="space-y-2">
-        <h2>标题样式</h2>
-        <div class="flex gap-2">
-          <Select v-model="selectedHeadingLevel">
-            <SelectTrigger class="w-[120px]">
-              <SelectValue placeholder="选择标题" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="{ label, value } in headingLevelOptions" :key="value" :value="value">
-                {{ label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
-          <Select v-model="selectedHeadingStyle">
-            <SelectTrigger class="flex-1">
-              <SelectValue placeholder="选择样式" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem v-for="{ label, value } in headingStyleOptions" :key="value" :value="value">
-                {{ label }}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div class="flex items-center justify-between gap-2">
+          <h2>主题组合</h2>
+          <Button
+            size="sm"
+            variant="outline"
+            :class="{
+              'border-black dark:border-white border-2': !isThemeCompositionCustom,
+            }"
+            @click="resetThemeComposition"
+          >
+            当前主题
+          </Button>
+        </div>
+        <Select v-model="selectedThemeSlot">
+          <SelectTrigger>
+            <SelectValue placeholder="选择组件" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem v-for="{ label, value, desc } in themeSlotOptions" :key="value" :value="value">
+              {{ label }}
+              <span class="ml-2 text-xs text-muted-foreground">{{ desc }}</span>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        <div class="grid grid-cols-2 gap-2">
+          <Button
+            v-for="preset in currentSlotPresets"
+            :key="preset.id"
+            class="h-auto min-h-[4.25rem] w-full justify-start px-3 py-2 text-left whitespace-normal"
+            variant="outline"
+            :class="{
+              'border-black dark:border-white border-2': currentSlotPreset === preset.id,
+            }"
+            @click="themeSlotChanged(preset.id)"
+          >
+            <span class="block min-w-0">
+              <span class="block truncate text-sm font-medium">{{ preset.label }}</span>
+              <span class="block truncate text-xs text-muted-foreground">{{ preset.preview }}</span>
+              <span class="block truncate text-[11px] text-muted-foreground/80">{{ preset.desc }}</span>
+            </span>
+          </Button>
         </div>
       </div>
       <div class="space-y-2">
